@@ -2,12 +2,15 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 	"github.com/spf13/cobra"
+	"os"
 )
 
 func init() {
 	rootCmd.AddCommand(versionCmd)
+	rootCmd.AddCommand(authCmd)
+	authCmd.AddCommand(loginCmd)
+	authCmd.AddCommand(logoutCmd)
 }
 
 func Execute() {
@@ -19,8 +22,7 @@ func Execute() {
 
 var rootCmd = &cobra.Command{
 	Use:   "42-cli",
-	Short: "42-cli, is a cli that provides access to information on the intra of 42 School.",
-	Long:  `42-cli, is a cli that provides access to information on the intra of 42 School via API. This tool is a alternative way of accessing public intranet data.`,
+	Short: "42-cli brings 42's intranet to your terminal.",
+	Long:  `42-cli brings 42's intranet to your terminal. This tool is a alternative way of accessing public intranet data.`,
 	Run:   func(cmd *cobra.Command, args []string) {},
 }
-
