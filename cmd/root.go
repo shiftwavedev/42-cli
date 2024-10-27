@@ -11,6 +11,7 @@ func init() {
 	rootCmd.AddCommand(authCmd)
 	authCmd.AddCommand(loginCmd)
 	authCmd.AddCommand(logoutCmd)
+	authCmd.AddCommand(updateCmd)
 }
 
 func Execute() {

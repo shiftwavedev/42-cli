@@ -38,6 +38,21 @@ var logoutCmd = &cobra.Command{
 	},
 }
 
+var updateCmd = &cobra.Command{
+	Use:   "update",
+	Short: "Updating your 42 keys.",
+	Args:  cobra.ExactArgs(3),
+	Run: func(cmd *cobra.Command, args []string) {
+		login42, clientUid, clientSecret := args[0], args[1], args[2]
+		isValidData := dataCheck(login42, clientUid, clientSecret)
+		if !isValidData {
+			log.Fatal("Error: The data supplied are not valid.")
+		}
+		registerKeyring(login42, clientUid, clientSecret)
+		fmt.Println("Authentication token updated.")
+	},
+}
+
 func checkError(err error) {
 	if err != nil {
 		log.Fatal("Error: Unsuccessful action.")
