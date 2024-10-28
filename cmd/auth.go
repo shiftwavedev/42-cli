@@ -53,6 +53,19 @@ var updateCmd = &cobra.Command{
 	},
 }
 
+var tokenCmd = &cobra.Command{
+	Use:   "token",
+	Short: "Get your 42 keys.",
+	Run: func(cmd *cobra.Command, args []string) {
+		ids := [3]string{"login42", "client_uid", "client_secret"}
+		for index := 0; index < 3; index++ {
+			data, err := keyring.Get(service, ids[index])
+			checkError(err)
+			fmt.Printf("%v: %v\n", ids[index], data)
+		}
+	},
+}
+
 func checkError(err error) {
 	if err != nil {
 		log.Fatal("Error: Unsuccessful action.")
