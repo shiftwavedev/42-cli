@@ -75,7 +75,7 @@ func checkError(err error) {
 func dataCheck(login42 string, clientUid string, clientSecret string) bool {
 	checkLogin42, _ := regexp.Match("^[a-z-]+$", []byte(login42))
 	checkClientUID, _ := regexp.Match("^u-s4t2ud-[a-z0-9]+$", []byte(clientUid))
-	checkSecretUID, _ := regexp.Match("^u-s4t2ud-[a-z0-9]+$", []byte(clientSecret))
+	checkSecretUID, _ := regexp.Match("^s-s4t2ud-[a-z0-9]+$", []byte(clientSecret))
 	return checkLogin42 && checkClientUID && checkSecretUID
 }
 
