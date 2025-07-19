@@ -39,3 +39,6 @@ go.work
 # Ignore all local history of files
 .history
 .ionide
+
+### Projects ###
+42-cli
