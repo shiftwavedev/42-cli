@@ -27,51 +27,54 @@ type TokenResponse struct {
 
 var authCmd = &cobra.Command{
 	Use:   "auth",
-	Short: "Authenticate 42-cli with 42 intranet.",
+	Short: "Authentication commands for 42 intranet",
+	Long:  "Commands to manage authentication credentials for 42 intranet API access",
 }
 
 var loginCmd = &cobra.Command{
 	Use:   "login [login42] [client_id] [secret_id]",
-	Short: "Authenticate with API 42 keys.",
+	Short: "Store authentication credentials for 42 API access",
 	Args:  cobra.ExactArgs(3),
 	Run: func(cmd *cobra.Command, args []string) {
 		login42, clientUid, clientSecret := args[0], args[1], args[2]
 		isValidData := dataCheck(login42, clientUid, clientSecret)
 		if !isValidData {
-			log.Fatal("Error: The data supplied are not valid.")
+			log.Fatal("Error: Invalid credentials format")
 		}
 		registerKeyring(login42, clientUid, clientSecret)
-		fmt.Println("Authentication token register.")
+		fmt.Println("Authentication credentials stored successfully")
 	},
 }
 
 var logoutCmd = &cobra.Command{
 	Use:   "logout",
-	Short: "Removing API 42 keys.",
+	Short: "Remove stored authentication credentials",
 	Run: func(cmd *cobra.Command, args []string) {
 		unregisterKeyring()
+		fmt.Println("Authentication credentials removed successfully")
 	},
 }
 
 var updateCmd = &cobra.Command{
-	Use:   "update",
-	Short: "Updating your 42 keys.",
+	Use:   "update [login42] [client_id] [secret_id]",
+	Short: "Update stored authentication credentials",
 	Args:  cobra.ExactArgs(3),
 	Run: func(cmd *cobra.Command, args []string) {
 		login42, clientUid, clientSecret := args[0], args[1], args[2]
 		isValidData := dataCheck(login42, clientUid, clientSecret)
 		if !isValidData {
-			log.Fatal("Error: The data supplied are not valid.")
+			log.Fatal("Error: Invalid credentials format")
 		}
 		registerKeyring(login42, clientUid, clientSecret)
-		fmt.Println("Authentication token updated.")
+		fmt.Println("Authentication credentials updated successfully")
 	},
 }
 
 var tokenCmd = &cobra.Command{
 	Use:   "token",
-	Short: "Get your 42 keys.",
+	Short: "Display stored authentication credentials",
 	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Println("=== Stored Authentication Credentials ===")
 		ids := [3]string{"login42", "client_uid", "client_secret"}
 		for index := 0; index < 3; index++ {
 			data, err := keyring.Get(service, ids[index])
@@ -83,7 +86,7 @@ var tokenCmd = &cobra.Command{
 
 func checkError(err error) {
 	if err != nil {
-		log.Fatal("Error: Unsuccessful action.")
+		log.Fatal("Error: Authentication operation failed")
 	}
 }
 
