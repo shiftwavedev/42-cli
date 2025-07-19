@@ -42,17 +42,22 @@ type User struct {
 }
 
 var userCmd = &cobra.Command{
-	Use:   "user",
-	Short: "User-related commands",
-	Long:  "Commands to interact with user data from 42 intranet",
-}
-
-var profileCmd = &cobra.Command{
-	Use:   "profile [login]",
+	Use:   "user [login]",
 	Short: "Display user profile information",
-	Args:  cobra.ExactArgs(1),
+	Long:  "Display user profile information. If no login is provided, shows your own profile.",
+	Args:  cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		login := args[0]
+		var login string
+		if len(args) == 0 {
+			login42, err := keyring.Get(service, "login42")
+			if err != nil {
+				log.Fatal("Error: You need to login first. Use '42-cli auth login'")
+			}
+			login = login42
+		} else {
+			login = args[0]
+		}
+		
 		user, err := getUserProfile(login)
 		if err != nil {
 			log.Fatal("Error fetching user profile:", err)
@@ -60,24 +65,6 @@ var profileCmd = &cobra.Command{
 		displayUserProfile(user)
 	},
 }
-
-var meCmd = &cobra.Command{
-	Use:   "me",
-	Short: "Display your own profile information",
-	Run: func(cmd *cobra.Command, args []string) {
-		login42, err := keyring.Get(service, "login42")
-		if err != nil {
-			log.Fatal("Error: You need to login first. Use '42-cli auth login'")
-		}
-		
-		user, err := getUserProfile(login42)
-		if err != nil {
-			log.Fatal("Error fetching your profile:", err)
-		}
-		displayUserProfile(user)
-	},
-}
-
 
 func getUserProfile(login string) (*User, error) {
 	token, err := GetAccessToken()
@@ -176,7 +163,4 @@ func formatDate(dateStr string) string {
 	return t.Format("2006-01-02 15:04")
 }
 
-func init() {
-	userCmd.AddCommand(profileCmd)
-	userCmd.AddCommand(meCmd)
-}
+func init() { }
