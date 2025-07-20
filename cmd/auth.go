@@ -72,7 +72,7 @@ var updateCmd = &cobra.Command{
 
 var tokenCmd = &cobra.Command{
 	Use:   "token",
-	Short: "Display stored authentication credentials",
+	Short: "Display stored authentication credentials and current access token",
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("=== Stored Authentication Credentials ===")
 		ids := [3]string{"login42", "client_uid", "client_secret"}
@@ -80,6 +80,30 @@ var tokenCmd = &cobra.Command{
 			data, err := keyring.Get(service, ids[index])
 			checkError(err)
 			fmt.Printf("%v: %v\n", ids[index], data)
+		}
+		
+		fmt.Println("\n=== Current Access Token ===")
+		token, err := GetAccessToken()
+		if err != nil {
+			fmt.Printf("Error getting access token: %v\n", err)
+		} else {
+			fmt.Printf("access_token: %s\n", token)
+			
+			expiryStr, err := keyring.Get(service, "token_expiry")
+			if err == nil {
+				expiry, err := strconv.ParseInt(expiryStr, 10, 64)
+				if err == nil {
+					expiryTime := time.Unix(expiry, 0)
+					fmt.Printf("expires_at: %s\n", expiryTime.Format("2006-01-02 15:04:05"))
+					
+					timeLeft := time.Until(expiryTime)
+					if timeLeft > 0 {
+						fmt.Printf("time_left: %v\n", timeLeft.Round(time.Minute))
+					} else {
+						fmt.Printf("status: expired\n")
+					}
+				}
+			}
 		}
 	},
 }
