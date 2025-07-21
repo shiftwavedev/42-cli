@@ -254,21 +254,18 @@ func getLocationInfo(login string) ([]Location, error) {
 }
 
 func displayLocationInfo(login string, locations []Location) {
+	active := []Location{}
+
 	fmt.Printf("=== Location Information: %s ===\n\n", login)
-	
 	if len(locations) == 0 {
 		fmt.Println("No location information found.")
 		return
 	}
 
-	active := []Location{}
-	recent := []Location{}
 	
 	for _, loc := range locations {
 		if loc.EndAt == nil {
 			active = append(active, loc)
-		} else {
-			recent = append(recent, loc)
 		}
 	}
 
