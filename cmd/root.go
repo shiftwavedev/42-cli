@@ -11,6 +11,7 @@ func init() {
 	rootCmd.AddCommand(authCmd)
 	rootCmd.AddCommand(userCmd)
 	rootCmd.AddCommand(projectsCmd)
+	rootCmd.AddCommand(correctionsCmd)
 	authCmd.AddCommand(loginCmd)
 	authCmd.AddCommand(logoutCmd)
 	authCmd.AddCommand(updateCmd)
