@@ -3,31 +3,32 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/spf13/cobra"
-	"github.com/zalando/go-keyring"
 	"io"
 	"log"
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/spf13/cobra"
+	"github.com/zalando/go-keyring"
 )
 
 type ScaleTeam struct {
-	ID            int     `json:"id"`
-	Scale         Scale   `json:"scale"`
-	Comment       string  `json:"comment"`
-	CreatedAt     string  `json:"created_at"`
-	UpdatedAt     string  `json:"updated_at"`
-	Feedback      string  `json:"feedback"`
-	FinalMark     *int    `json:"final_mark"`
-	Flag          Flag    `json:"flag"`
-	BeginAt       string  `json:"begin_at"`
-	Correcteds    interface{}  `json:"correcteds"`
-	Correctors    interface{}  `json:"correctors"`
-	Truant        struct{} `json:"truant"`
-	FilledAt      *string `json:"filled_at"`
-	QuestionsWithAnswers []interface{} `json:"questions_with_answers"`
-	Team          TeamInfo `json:"team"`
+	ID                   int      `json:"id"`
+	Scale                Scale    `json:"scale"`
+	Comment              string   `json:"comment"`
+	CreatedAt            string   `json:"created_at"`
+	UpdatedAt            string   `json:"updated_at"`
+	Feedback             string   `json:"feedback"`
+	FinalMark            *int     `json:"final_mark"`
+	Flag                 Flag     `json:"flag"`
+	BeginAt              string   `json:"begin_at"`
+	Correcteds           any      `json:"correcteds"`
+	Correctors           any      `json:"correctors"`
+	Truant               struct{} `json:"truant"`
+	FilledAt             *string  `json:"filled_at"`
+	QuestionsWithAnswers []any    `json:"questions_with_answers"`
+	Team                 TeamInfo `json:"team"`
 }
 
 type Scale struct {
@@ -46,16 +47,16 @@ type Flag struct {
 }
 
 type TeamInfo struct {
-	ID               int     `json:"id"`
-	Name             string  `json:"name"`
-	URL              string  `json:"url"`
-	FinalMark        *int    `json:"final_mark"`
-	ProjectID        int     `json:"project_id"`
-	CreatedAt        string  `json:"created_at"`
-	UpdatedAt        string  `json:"updated_at"`
-	Status           string  `json:"status"`
-	TerminatingAt    *string `json:"terminating_at"`
-	Users            []struct {
+	ID            int     `json:"id"`
+	Name          string  `json:"name"`
+	URL           string  `json:"url"`
+	FinalMark     *int    `json:"final_mark"`
+	ProjectID     int     `json:"project_id"`
+	CreatedAt     string  `json:"created_at"`
+	UpdatedAt     string  `json:"updated_at"`
+	Status        string  `json:"status"`
+	TerminatingAt *string `json:"terminating_at"`
+	Users         []struct {
 		ID             int    `json:"id"`
 		Login          string `json:"login"`
 		URL            string `json:"url"`
@@ -81,7 +82,7 @@ var correctionsCmd = &cobra.Command{
 		if err != nil {
 			log.Fatal("Error: You need to login first. Use '42-cli auth login'")
 		}
-		
+
 		scaleTeams, err := getCorrections(login42)
 		if err != nil {
 			log.Fatal("Error fetching corrections information:", err)
@@ -130,7 +131,7 @@ func getCorrections(login string) ([]ScaleTeam, error) {
 
 func displayCorrections(login string, scaleTeams []ScaleTeam) {
 	fmt.Printf("=== Corrections: %s ===\n\n", login)
-	
+
 	if len(scaleTeams) == 0 {
 		fmt.Println("No corrections or evaluations found.")
 		return
@@ -138,7 +139,7 @@ func displayCorrections(login string, scaleTeams []ScaleTeam) {
 
 	toCorrect := []ScaleTeam{}
 	toReceive := []ScaleTeam{}
-	
+
 	for _, st := range scaleTeams {
 		if st.FilledAt == nil {
 			if isCorrectorForUser(st.Correctors, login) {
@@ -157,7 +158,7 @@ func displayCorrections(login string, scaleTeams []ScaleTeam) {
 			if teamName == "" {
 				teamName = fmt.Sprintf("team-%d", st.Team.ID)
 			}
-			
+
 			fmt.Printf("   • %s - %s\n", projectName, teamName)
 			fmt.Printf("     📅 %s\n", formatEvaluationTime(st.BeginAt))
 			fmt.Printf("     👥 Corriger: %s\n", getStudentNames(st.Team.Users))
@@ -173,7 +174,7 @@ func displayCorrections(login string, scaleTeams []ScaleTeam) {
 			if teamName == "" {
 				teamName = fmt.Sprintf("team-%d", st.Team.ID)
 			}
-			
+
 			fmt.Printf("   • %s - %s\n", projectName, teamName)
 			fmt.Printf("     📅 %s\n", formatEvaluationTime(st.BeginAt))
 			fmt.Printf("     👤 Correcteur: %s\n", formatCorrectors(st.Correctors))
@@ -212,11 +213,11 @@ func getStudentNames(users []struct {
 	return strings.Join(names, ", ")
 }
 
-func isCorrectorForUser(correctors interface{}, login string) bool {
+func isCorrectorForUser(correctors any, login string) bool {
 	switch v := correctors.(type) {
 	case string:
 		return strings.Contains(strings.ToLower(v), strings.ToLower(login))
-	case []interface{}:
+	case []any:
 		for _, corrector := range v {
 			if correctorStr, ok := corrector.(string); ok {
 				if strings.Contains(strings.ToLower(correctorStr), strings.ToLower(login)) {
@@ -228,11 +229,11 @@ func isCorrectorForUser(correctors interface{}, login string) bool {
 	return false
 }
 
-func formatCorrectors(correctors interface{}) string {
+func formatCorrectors(correctors any) string {
 	switch v := correctors.(type) {
 	case string:
 		return v
-	case []interface{}:
+	case []any:
 		var names []string
 		for _, corrector := range v {
 			if correctorStr, ok := corrector.(string); ok {
@@ -249,11 +250,11 @@ func formatEvaluationTime(dateStr string) string {
 	if dateStr == "" {
 		return "N/A"
 	}
-	
+
 	t, err := time.Parse(time.RFC3339, dateStr)
 	if err != nil {
 		return dateStr
 	}
-	
+
 	return t.Format("2006-01-02 15:04")
 }
