@@ -151,7 +151,7 @@ func displayCorrections(login string, scaleTeams []ScaleTeam) {
 	}
 
 	if len(toCorrect) > 0 {
-		fmt.Printf("🔍 Corrections à Donner (%d)\n", len(toCorrect))
+		fmt.Printf("🔍 Corrections to Give (%d)\n", len(toCorrect))
 		for _, st := range toCorrect {
 			projectName := getProjectName(st)
 			teamName := st.Team.Name
@@ -161,13 +161,13 @@ func displayCorrections(login string, scaleTeams []ScaleTeam) {
 
 			fmt.Printf("   • %s - %s\n", projectName, teamName)
 			fmt.Printf("     📅 %s\n", formatEvaluationTime(st.BeginAt))
-			fmt.Printf("     👥 Corriger: %s\n", getStudentNames(st.Team.Users))
+			fmt.Printf("     👥 Correct: %s\n", getStudentNames(st.Team.Users))
 			fmt.Println()
 		}
 	}
 
 	if len(toReceive) > 0 {
-		fmt.Printf("📝 Évaluations à Recevoir (%d)\n", len(toReceive))
+		fmt.Printf("📝 Evaluations to Receive (%d)\n", len(toReceive))
 		for _, st := range toReceive {
 			projectName := getProjectName(st)
 			teamName := st.Team.Name
@@ -177,13 +177,13 @@ func displayCorrections(login string, scaleTeams []ScaleTeam) {
 
 			fmt.Printf("   • %s - %s\n", projectName, teamName)
 			fmt.Printf("     📅 %s\n", formatEvaluationTime(st.BeginAt))
-			fmt.Printf("     👤 Correcteur: %s\n", formatCorrectors(st.Correctors))
+			fmt.Printf("     👤 Corrector: %s\n", formatCorrectors(st.Correctors))
 			fmt.Println()
 		}
 	}
 
 	if len(toCorrect) == 0 && len(toReceive) == 0 {
-		fmt.Println("✅ Aucune correction ou évaluation en attente.")
+		fmt.Println("✅ No pending corrections or evaluations.")
 	}
 }
 
