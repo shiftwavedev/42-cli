@@ -20,7 +20,7 @@ type Project struct {
 	Name        string `json:"name"`
 	Slug        string `json:"slug"`
 	Status      string `json:"status"`
-	ValidatedAt string `json:"validated_at"`
+	Validated   bool  `json:"validated?"`
 	FinalMark   int    `json:"final_mark"`
 	Project     struct {
 		ID   int    `json:"id"`
@@ -145,12 +145,14 @@ func displayUserProjects(login string, projects []Project) {
 	}
 	
 	for _, project := range projects {
-		switch strings.ToLower(project.Status) {
-		case "finished":
+		var status string = strings.ToLower(project.Status)
+		if status == "finished" && project.Validated {
 			finished = append(finished, project)
-		case "in_progress":
+		}
+		if status == "in_progress" && !project.Validated {
 			inProgress = append(inProgress, project)
-		case "failed":
+		}
+		if status == "failed" {
 			failed = append(failed, project)
 		}
 	}
@@ -161,9 +163,6 @@ func displayUserProjects(login string, projects []Project) {
 			fmt.Printf("✅ %s", project.Project.Name)
 			if project.FinalMark > 0 {
 				fmt.Printf(" - Score: %d", project.FinalMark)
-			}
-			if project.ValidatedAt != "" {
-				fmt.Printf(" (Validated: %s)", formatDate(project.ValidatedAt))
 			}
 			fmt.Println()
 		}
