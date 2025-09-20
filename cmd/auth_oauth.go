@@ -55,7 +55,7 @@ func startCallbackServer() (*CallbackResponse, error) {
 	}()
 
 	callback := <-callbackChan
-	
+
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	server.Shutdown(ctx)
@@ -130,54 +130,54 @@ func refreshAccessToken(refreshToken, clientID, clientSecret string) (*TokenResp
 
 func performOAuthLogin(clientID, clientSecret string) error {
 	redirectURI := "http://localhost:8080/callback"
-	
+
 	authURL := fmt.Sprintf("https://api.intra.42.fr/oauth/authorize?client_id=%s&redirect_uri=%s&response_type=code&scope=public%%20profile",
 		url.QueryEscape(clientID),
 		url.QueryEscape(redirectURI))
 
 	fmt.Println("Opening browser for authentication...")
 	fmt.Printf("If the browser doesn't open automatically, please visit: %s\n", authURL)
-	
+
 	err := openBrowser(authURL)
 	if err != nil {
 		fmt.Printf("Failed to open browser automatically: %v\n", err)
 		fmt.Printf("Please manually visit: %s\n", authURL)
 	}
-	
+
 	fmt.Println("Waiting for authentication callback...")
 	callback, err := startCallbackServer()
 	if err != nil {
 		return fmt.Errorf("callback server error: %v", err)
 	}
-	
+
 	if callback.Error != "" {
 		return fmt.Errorf("authentication error: %s", callback.Error)
 	}
-	
+
 	fmt.Println("Exchanging authorization code for access token...")
 	tokenResp, err := exchangeCodeForToken(callback.Code, clientID, clientSecret, redirectURI)
 	if err != nil {
 		return fmt.Errorf("token exchange error: %v", err)
 	}
-	
+
 	expiry := time.Now().Unix() + int64(tokenResp.ExpiresIn) - 300
-	
+
 	err = keyring.Set(service, "user_access_token", tokenResp.AccessToken)
 	if err != nil {
 		return fmt.Errorf("failed to store user access token: %v", err)
 	}
-	
+
 	err = keyring.Set(service, "user_token_expiry", strconv.FormatInt(expiry, 10))
 	if err != nil {
 		return fmt.Errorf("failed to store user token expiry: %v", err)
 	}
-	
+
 	if tokenResp.RefreshToken != "" {
 		err = keyring.Set(service, "user_refresh_token", tokenResp.RefreshToken)
 		if err != nil {
 			return fmt.Errorf("failed to store user refresh token: %v", err)
 		}
 	}
-	
+
 	return nil
 }
