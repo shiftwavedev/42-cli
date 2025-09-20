@@ -13,106 +13,6 @@ import (
 	"github.com/zalando/go-keyring"
 )
 
-type CorrectionUser struct {
-	ID    int    `json:"id"`
-	Login string `json:"login"`
-	URL   string `json:"url"`
-}
-
-type ScaleTeam struct {
-	ID                   int              `json:"id"`
-	ScaleID              int              `json:"scale_id"`
-	Comment              *string          `json:"comment"`
-	CreatedAt            string           `json:"created_at"`
-	UpdatedAt            string           `json:"updated_at"`
-	Feedback             *string          `json:"feedback"`
-	FinalMark            *int             `json:"final_mark"`
-	Flag                 Flag             `json:"flag"`
-	BeginAt              string           `json:"begin_at"`
-	Correcteds           []CorrectionUser `json:"correcteds"`
-	Corrector            CorrectionUser   `json:"corrector"`
-	Truant               struct{}         `json:"truant"`
-	FilledAt             *string          `json:"filled_at"`
-	QuestionsWithAnswers []any            `json:"questions_with_answers"`
-	Scale                Scale            `json:"scale"`
-	Team                 TeamInfo         `json:"team"`
-	Feedbacks            []any            `json:"feedbacks"`
-}
-
-type Language struct {
-	ID         int    `json:"id"`
-	Name       string `json:"name"`
-	Identifier string `json:"identifier"`
-	CreatedAt  string `json:"created_at"`
-	UpdatedAt  string `json:"updated_at"`
-}
-
-type Scale struct {
-	ID                 int        `json:"id"`
-	EvaluationID       int        `json:"evaluation_id"`
-	Name               string     `json:"name"`
-	IsPrimary          bool       `json:"is_primary"`
-	Comment            string     `json:"comment"`
-	IntroductionMd     string     `json:"introduction_md"`
-	DisclaimerMd       string     `json:"disclaimer_md"`
-	GuidelinesMd       string     `json:"guidelines_md"`
-	CreatedAt          string     `json:"created_at"`
-	CorrectionNumber   int        `json:"correction_number"`
-	Duration           int        `json:"duration"`
-	ManualSubscription bool       `json:"manual_subscription"`
-	Languages          []Language `json:"languages"`
-	Flags              []Flag     `json:"flags"`
-	Free               bool       `json:"free"`
-}
-
-type Flag struct {
-	ID        int    `json:"id"`
-	Name      string `json:"name"`
-	Positive  bool   `json:"positive"`
-	Icon      string `json:"icon"`
-	CreatedAt string `json:"created_at"`
-	UpdatedAt string `json:"updated_at"`
-}
-
-type TeamUser struct {
-	ID             int    `json:"id"`
-	Login          string `json:"login"`
-	URL            string `json:"url"`
-	Leader         bool   `json:"leader"`
-	Occurrence     int    `json:"occurrence"`
-	Validated      bool   `json:"validated"`
-	ProjectsUserID int    `json:"projects_user_id"`
-}
-
-type CorrectionProject struct {
-	ID   int    `json:"id"`
-	Name string `json:"name"`
-	Slug string `json:"slug"`
-}
-
-type TeamInfo struct {
-	ID                int               `json:"id"`
-	Name              string            `json:"name"`
-	URL               string            `json:"url"`
-	FinalMark         *int              `json:"final_mark"`
-	ProjectID         int               `json:"project_id"`
-	CreatedAt         string            `json:"created_at"`
-	UpdatedAt         string            `json:"updated_at"`
-	Status            string            `json:"status"`
-	TerminatingAt     *string           `json:"terminating_at"`
-	Users             []TeamUser        `json:"users"`
-	Locked            bool              `json:"locked?"`
-	Validated         *bool             `json:"validated?"`
-	Closed            bool              `json:"closed?"`
-	RepoURL           string            `json:"repo_url"`
-	RepoUUID          string            `json:"repo_uuid"`
-	LockedAt          string            `json:"locked_at"`
-	ClosedAt          string            `json:"closed_at"`
-	ProjectSessionID  int               `json:"project_session_id"`
-	ProjectGitlabPath string            `json:"project_gitlab_path"`
-	Project           CorrectionProject `json:"project"`
-}
-
 var correctionsCmd = &cobra.Command{
 	Use:   "corrections",
 	Short: "Display your corrections to give and evaluations to receive",
@@ -215,7 +115,7 @@ func getCorrectionsAsCorrected() ([]ScaleTeam, error) {
 	return scaleTeams, nil
 }
 
-func displayCorrections(login string, toCorrect []ScaleTeam, toReceive []ScaleTeam) {
+func displayCorrections(_ string, toCorrect []ScaleTeam, toReceive []ScaleTeam) {
 	fmt.Print("=== Corrections ===\n\n")
 
 	if len(toCorrect) > 0 {

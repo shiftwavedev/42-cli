@@ -12,20 +12,6 @@ import (
 
 const service string = "42-cli"
 
-type TokenResponse struct {
-	AccessToken  string `json:"access_token"`
-	TokenType    string `json:"token_type"`
-	ExpiresIn    int    `json:"expires_in"`
-	Scope        string `json:"scope"`
-	CreatedAt    int64  `json:"created_at"`
-	RefreshToken string `json:"refresh_token"`
-}
-
-type CallbackResponse struct {
-	Code  string
-	Error string
-}
-
 var authCmd = &cobra.Command{
 	Use:   "auth",
 	Short: "Authentication commands for 42 intranet",
@@ -42,16 +28,16 @@ var loginCmd = &cobra.Command{
 		if !isValidData {
 			log.Fatal("Error: Invalid credentials format")
 		}
-		
+
 		registerKeyring(login42, clientUid, clientSecret)
 		fmt.Println("Credentials stored successfully")
 		fmt.Println("Starting OAuth authentication...")
-		
+
 		err := performOAuthLogin(clientUid, clientSecret)
 		if err != nil {
 			log.Fatalf("OAuth authentication failed: %v", err)
 		}
-		
+
 		fmt.Println("OAuth authentication successful! You can now access user endpoints.")
 	},
 }
@@ -91,21 +77,21 @@ var tokenCmd = &cobra.Command{
 			checkError(err, "Keyring data not found")
 			fmt.Printf("%v: %v\n", ids[index], data)
 		}
-		
+
 		fmt.Println("\n=== Application Token (Client Credentials) ===")
 		appToken, err := GetApplicationToken()
 		if err != nil {
 			fmt.Printf("Error getting application token: %v\n", err)
 		} else {
 			fmt.Printf("access_token: %s\n", appToken)
-			
+
 			expiryStr, err := keyring.Get(service, "token_expiry")
 			if err == nil {
 				expiry, err := strconv.ParseInt(expiryStr, 10, 64)
 				if err == nil {
 					expiryTime := time.Unix(expiry, 0)
 					fmt.Printf("expires_at: %s\n", expiryTime.Format("2006-01-02 15:04:05"))
-					
+
 					timeLeft := time.Until(expiryTime)
 					if timeLeft > 0 {
 						fmt.Printf("time_left: %v\n", timeLeft.Round(time.Minute))
@@ -123,14 +109,14 @@ var tokenCmd = &cobra.Command{
 			fmt.Println("Run '42-cli auth login' to authenticate with OAuth")
 		} else {
 			fmt.Printf("access_token: %s\n", userToken)
-			
+
 			expiryStr, err := keyring.Get(service, "user_token_expiry")
 			if err == nil {
 				expiry, err := strconv.ParseInt(expiryStr, 10, 64)
 				if err == nil {
 					expiryTime := time.Unix(expiry, 0)
 					fmt.Printf("expires_at: %s\n", expiryTime.Format("2006-01-02 15:04:05"))
-					
+
 					timeLeft := time.Until(expiryTime)
 					if timeLeft > 0 {
 						fmt.Printf("time_left: %v\n", timeLeft.Round(time.Minute))

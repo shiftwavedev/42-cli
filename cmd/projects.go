@@ -15,35 +15,6 @@ import (
 	"time"
 )
 
-type Project struct {
-	ID          int    `json:"id"`
-	Name        string `json:"name"`
-	Slug        string `json:"slug"`
-	Status      string `json:"status"`
-	Validated   bool  `json:"validated?"`
-	FinalMark   int    `json:"final_mark"`
-	Project     struct {
-		ID   int    `json:"id"`
-		Name string `json:"name"`
-		Slug string `json:"slug"`
-	} `json:"project"`
-	CursusIds []int `json:"cursus_ids"`
-	MarkedAt  string `json:"marked_at"`
-	Marked    bool   `json:"marked"`
-	Retriable bool   `json:"retriable"`
-	Teams     []Team `json:"teams"`
-}
-
-type Team struct {
-	ID      int    `json:"id"`
-	Name    string `json:"name"`
-	RepoURL string `json:"repo_url"`
-	Users   []struct {
-		ID    int    `json:"id"`
-		Login string `json:"login"`
-	} `json:"users"`
-}
-
 var projectsCmd = &cobra.Command{
 	Use:   "projects [login]",
 	Short: "Display user projects information",
@@ -60,7 +31,7 @@ var projectsCmd = &cobra.Command{
 		} else {
 			login = args[0]
 		}
-		
+
 		projects, err := getUserProjects(login)
 		if err != nil {
 			log.Fatal("Error fetching user projects:", err)
@@ -77,7 +48,7 @@ var cloneCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		projectName := args[0]
 		var targetDir string
-		
+
 		if len(args) == 2 {
 			targetDir = args[1]
 		} else {
@@ -87,7 +58,7 @@ var cloneCmd = &cobra.Command{
 			}
 			targetDir = filepath.Join(cwd, projectName)
 		}
-		
+
 		err := cloneProject(projectName, targetDir)
 		if err != nil {
 			log.Fatal("Error cloning project:", err)
@@ -95,7 +66,7 @@ var cloneCmd = &cobra.Command{
 	},
 }
 
-func getUserProjects(login string) ([]Project, error) {
+func getUserProjects(login string) ([]ProjectUser, error) {
 	token, err := GetAccessToken()
 	if err != nil {
 		return nil, err
@@ -125,7 +96,7 @@ func getUserProjects(login string) ([]Project, error) {
 		return nil, err
 	}
 
-	var projects []Project
+	var projects []ProjectUser
 	if err := json.Unmarshal(body, &projects); err != nil {
 		return nil, err
 	}
@@ -133,17 +104,17 @@ func getUserProjects(login string) ([]Project, error) {
 	return projects, nil
 }
 
-func displayUserProjects(login string, projects []Project) {
-	var finished []Project
-	var inProgress []Project
-	var failed []Project
+func displayUserProjects(login string, projects []ProjectUser) {
+	var finished []ProjectUser
+	var inProgress []ProjectUser
+	var failed []ProjectUser
 
 	fmt.Printf("=== Projects: %s ===\n", login)
 	if len(projects) == 0 {
 		fmt.Println("No projects found.")
 		return
 	}
-	
+
 	for _, project := range projects {
 		var status string = strings.ToLower(project.Status)
 		if status == "finished" && project.Validated {
@@ -199,7 +170,7 @@ func displayUserProjects(login string, projects []Project) {
 	total := len(projects)
 	fmt.Printf("\n=== Summary ===\n")
 	fmt.Printf("Total Projects: %d\n", total)
-	fmt.Printf("Finished: %d | In Progress: %d | Failed: %d\n", 
+	fmt.Printf("Finished: %d | In Progress: %d | Failed: %d\n",
 		len(finished), len(inProgress), len(failed))
 }
 
@@ -256,7 +227,7 @@ func getProjectRepoURL(login, projectName string) (string, error) {
 			if err != nil {
 				return "", err
 			}
-			
+
 			// Find the team with the highest ID (most recent)
 			var latestTeam *Team
 			for _, team := range teams {
@@ -268,7 +239,7 @@ func getProjectRepoURL(login, projectName string) (string, error) {
 					}
 				}
 			}
-			
+
 			if latestTeam != nil {
 				return latestTeam.RepoURL, nil
 			}
@@ -308,7 +279,7 @@ func getProjectTeams(projectUserID int) ([]Team, error) {
 		return nil, err
 	}
 
-	var projectUser Project
+	var projectUser ProjectUser
 	if err := json.Unmarshal(body, &projectUser); err != nil {
 		return nil, err
 	}

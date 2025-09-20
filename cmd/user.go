@@ -11,50 +11,6 @@ import (
 	"time"
 )
 
-type User struct {
-	Login       string `json:"login"`
-	FirstName   string `json:"first_name"`
-	LastName    string `json:"last_name"`
-	Email       string `json:"email"`
-	Phone       string `json:"phone"`
-	DisplayName string `json:"displayname"`
-	Staff       bool   `json:"staff?"`
-	CorrectionPoint int `json:"correction_point"`
-	PoolMonth   string `json:"pool_month"`
-	PoolYear    string `json:"pool_year"`
-	Location    string `json:"location"`
-	Wallet      int    `json:"wallet"`
-	CreatedAt   string `json:"created_at"`
-	UpdatedAt   string `json:"updated_at"`
-	Alumni      bool   `json:"alumni?"`
-	Active      bool   `json:"active?"`
-	Campus      []struct {
-		Name    string `json:"name"`
-		Country string `json:"country"`
-	} `json:"campus"`
-	CursusUsers []struct {
-		Grade  string  `json:"grade"`
-		Level  float64 `json:"level"`
-		Cursus struct {
-			Name string `json:"name"`
-		} `json:"cursus"`
-	} `json:"cursus_users"`
-}
-
-type Location struct {
-	ID       int    `json:"id"`
-	BeginAt  string `json:"begin_at"`
-	EndAt    *string `json:"end_at"`
-	Primary  bool   `json:"primary"`
-	Host     string `json:"host"`
-	CampusID int    `json:"campus_id"`
-	User     struct {
-		ID    int    `json:"id"`
-		Login string `json:"login"`
-		URL   string `json:"url"`
-	} `json:"user"`
-}
-
 var userCmd = &cobra.Command{
 	Use:   "user [login]",
 	Short: "Display user profile information",
@@ -71,7 +27,7 @@ var userCmd = &cobra.Command{
 		} else {
 			login = args[0]
 		}
-		
+
 		user, err := getUserProfile(login)
 		if err != nil {
 			log.Fatal("Error fetching user profile:", err)
@@ -96,7 +52,7 @@ var locationCmd = &cobra.Command{
 		} else {
 			login = args[0]
 		}
-		
+
 		locations, err := getLocationInfo(login)
 		if err != nil {
 			log.Fatal("Error fetching location information:", err)
@@ -105,7 +61,7 @@ var locationCmd = &cobra.Command{
 	},
 }
 
-func getUserProfile(login string) (*User, error) {
+func getUserProfile(login string) (*UserProfile, error) {
 	token, err := GetAccessToken()
 	if err != nil {
 		return nil, err
@@ -135,7 +91,7 @@ func getUserProfile(login string) (*User, error) {
 		return nil, err
 	}
 
-	var user User
+	var user UserProfile
 	if err := json.Unmarshal(body, &user); err != nil {
 		return nil, err
 	}
@@ -143,26 +99,26 @@ func getUserProfile(login string) (*User, error) {
 	return &user, nil
 }
 
-func displayUserProfile(user *User) {
+func displayUserProfile(user *UserProfile) {
 	fmt.Printf("=== Profile: %s ===\n", user.Login)
 	fmt.Printf("Name: %s %s\n", user.FirstName, user.LastName)
 	fmt.Printf("Display Name: %s\n", user.DisplayName)
 	fmt.Printf("Email: %s\n", user.Email)
-	
+
 	if user.Phone != "" {
 		fmt.Printf("Phone: %s\n", user.Phone)
 	}
-	
+
 	fmt.Printf("Staff: %t\n", user.Staff)
 	fmt.Printf("Alumni: %t\n", user.Alumni)
 	fmt.Printf("Active: %t\n", user.Active)
 	fmt.Printf("Correction Points: %d\n", user.CorrectionPoint)
 	fmt.Printf("Wallet: %d\n", user.Wallet)
-	
+
 	if user.Location != "" {
 		fmt.Printf("Location: %s\n", user.Location)
 	}
-	
+
 	if user.PoolMonth != "" && user.PoolYear != "" {
 		fmt.Printf("Pool: %s %s\n", user.PoolMonth, user.PoolYear)
 	}
@@ -193,12 +149,12 @@ func formatDate(dateStr string) string {
 	if dateStr == "" {
 		return "N/A"
 	}
-	
+
 	t, err := time.Parse(time.RFC3339, dateStr)
 	if err != nil {
 		return dateStr
 	}
-	
+
 	return t.Format("2006-01-02 15:04")
 }
 
@@ -206,12 +162,12 @@ func formatDateTime(dateStr string) string {
 	if dateStr == "" {
 		return "N/A"
 	}
-	
+
 	t, err := time.Parse(time.RFC3339, dateStr)
 	if err != nil {
 		return dateStr
 	}
-	
+
 	return t.Format("2006-01-02 15:04")
 }
 
@@ -262,7 +218,6 @@ func displayLocationInfo(login string, locations []Location) {
 		return
 	}
 
-	
 	for _, loc := range locations {
 		if loc.EndAt == nil {
 			active = append(active, loc)
@@ -307,7 +262,7 @@ func calculateDuration(beginAt string, endAt *string) string {
 func formatDuration(d time.Duration) string {
 	hours := int(d.Hours())
 	minutes := int(d.Minutes()) % 60
-	
+
 	if hours > 24 {
 		days := hours / 24
 		hours = hours % 24
