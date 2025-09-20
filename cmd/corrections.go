@@ -17,7 +17,7 @@ var correctionsCmd = &cobra.Command{
 	Short: "Display your corrections to give and evaluations to receive",
 	Long:  "Display your upcoming corrections to give and evaluations to receive.",
 	Run: func(cmd *cobra.Command, args []string) {
-		login42, err := keyring.Get(service, "login42")
+		_, err := keyring.Get(service, "login42")
 		if err != nil {
 			log.Fatal("Error: You need to login first. Use '42-cli auth login'")
 		}
@@ -32,7 +32,7 @@ var correctionsCmd = &cobra.Command{
 			log.Fatal("Error fetching corrections to receive:", err)
 		}
 
-		displayCorrections(login42, toCorrect, toReceive)
+		displayCorrections(toCorrect, toReceive)
 	},
 }
 
@@ -114,7 +114,7 @@ func getCorrectionsAsCorrected() ([]ScaleTeam, error) {
 	return scaleTeams, nil
 }
 
-func displayCorrections(_ string, toCorrect []ScaleTeam, toReceive []ScaleTeam) {
+func displayCorrections(toCorrect []ScaleTeam, toReceive []ScaleTeam) {
 	PrintHeader("Corrections")
 	fmt.Print("\n\n")
 
