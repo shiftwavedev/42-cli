@@ -141,34 +141,8 @@ func displayUserProfile(user *UserProfile) {
 		}
 	}
 
-	fmt.Printf("\nCreated: %s\n", formatDate(user.CreatedAt))
-	fmt.Printf("Updated: %s\n", formatDate(user.UpdatedAt))
-}
-
-func formatDate(dateStr string) string {
-	if dateStr == "" {
-		return "N/A"
-	}
-
-	t, err := time.Parse(time.RFC3339, dateStr)
-	if err != nil {
-		return dateStr
-	}
-
-	return t.Format("2006-01-02 15:04")
-}
-
-func formatDateTime(dateStr string) string {
-	if dateStr == "" {
-		return "N/A"
-	}
-
-	t, err := time.Parse(time.RFC3339, dateStr)
-	if err != nil {
-		return dateStr
-	}
-
-	return t.Format("2006-01-02 15:04")
+	PrintKeyValue("Created", FormatDate(user.CreatedAt))
+	PrintKeyValue("Updated", FormatDate(user.UpdatedAt))
 }
 
 func getLocationInfo(login string) ([]Location, error) {
@@ -229,48 +203,13 @@ func displayLocationInfo(login string, locations []Location) {
 		fmt.Println("┌──────────────────────────────────────────────────┐")
 		for _, loc := range active {
 			fmt.Printf("│ 🖥️  Host: %-35s │\n", loc.Host)
-			fmt.Printf("│ 🕰️  Since: %-34s │\n", formatDateTime(loc.BeginAt))
-			fmt.Printf("│ ⏱️  Duration: %-30s │\n", calculateDuration(loc.BeginAt, nil))
+			fmt.Printf("│ 🕰️  Since: %-34s │\n", FormatDateTime(loc.BeginAt))
+			fmt.Printf("│ ⏱️  Duration: %-30s │\n", CalculateDuration(loc.BeginAt, nil))
 			fmt.Println("├──────────────────────────────────────────────────┤")
 		}
 		fmt.Println("└──────────────────────────────────────────────────┘")
 	} else {
 		fmt.Println("🚫 Currently offline")
-	}
-}
-
-func calculateDuration(beginAt string, endAt *string) string {
-	beginTime, err := time.Parse(time.RFC3339, beginAt)
-	if err != nil {
-		return "N/A"
-	}
-
-	var endTime time.Time
-	if endAt == nil {
-		endTime = time.Now()
-	} else {
-		endTime, err = time.Parse(time.RFC3339, *endAt)
-		if err != nil {
-			return "N/A"
-		}
-	}
-
-	duration := endTime.Sub(beginTime)
-	return formatDuration(duration)
-}
-
-func formatDuration(d time.Duration) string {
-	hours := int(d.Hours())
-	minutes := int(d.Minutes()) % 60
-
-	if hours > 24 {
-		days := hours / 24
-		hours = hours % 24
-		return fmt.Sprintf("%dd %dh %dm", days, hours, minutes)
-	} else if hours > 0 {
-		return fmt.Sprintf("%dh %dm", hours, minutes)
-	} else {
-		return fmt.Sprintf("%dm", minutes)
 	}
 }
 

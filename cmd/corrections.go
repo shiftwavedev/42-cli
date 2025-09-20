@@ -6,7 +6,6 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -116,72 +115,34 @@ func getCorrectionsAsCorrected() ([]ScaleTeam, error) {
 }
 
 func displayCorrections(_ string, toCorrect []ScaleTeam, toReceive []ScaleTeam) {
-	fmt.Print("=== Corrections ===\n\n")
+	PrintHeader("Corrections")
+	fmt.Print("\n\n")
 
 	if len(toCorrect) > 0 {
 		fmt.Printf("🔍 Corrections to Give (%d)\n", len(toCorrect))
 		for _, st := range toCorrect {
-			projectName := getProjectName(st)
-			teamName := st.Team.Name
-			if teamName == "" {
-				teamName = fmt.Sprintf("team-%d", st.Team.ID)
-			}
+			projectName := GetProjectDisplayName(st.Team)
+			teamName := GetTeamDisplayName(st.Team)
 
 			fmt.Printf("   • %s - %s\n", projectName, teamName)
-			fmt.Printf("     📅 %s\n", formatEvaluationTime(st.BeginAt))
-			fmt.Printf("     👥 Correct: %s\n", getStudentNames(st.Team.Users))
-			fmt.Println()
+			fmt.Printf("     📅 %s\n", FormatEvaluationTime(st.BeginAt))
+			fmt.Printf("     👥 Correct: %s\n\n", JoinUserLogins(st.Team.Users))
 		}
 	}
 
 	if len(toReceive) > 0 {
 		fmt.Printf("📝 Evaluations to Receive (%d)\n", len(toReceive))
 		for _, st := range toReceive {
-			projectName := getProjectName(st)
-			teamName := st.Team.Name
-			if teamName == "" {
-				teamName = fmt.Sprintf("team-%d", st.Team.ID)
-			}
+			projectName := GetProjectDisplayName(st.Team)
+			teamName := GetTeamDisplayName(st.Team)
 
 			fmt.Printf("   • %s - %s\n", projectName, teamName)
-			fmt.Printf("     📅 %s\n", formatEvaluationTime(st.BeginAt))
-			fmt.Printf("     👤 Corrector: %s\n", st.Corrector.Login)
-			fmt.Println()
+			fmt.Printf("     📅 %s\n", FormatEvaluationTime(st.BeginAt))
+			fmt.Printf("     👤 Corrector: %s\n\n", st.Corrector.Login)
 		}
 	}
 
 	if len(toCorrect) == 0 && len(toReceive) == 0 {
 		fmt.Println("✅ No pending corrections or evaluations.")
 	}
-}
-
-func getProjectName(st ScaleTeam) string {
-	if st.Team.Project.Name != "" {
-		return st.Team.Project.Name
-	}
-	if st.Team.Project.Slug != "" {
-		return st.Team.Project.Slug
-	}
-	return "Unknown Project"
-}
-
-func getStudentNames(users []TeamUser) string {
-	var names []string
-	for _, user := range users {
-		names = append(names, user.Login)
-	}
-	return strings.Join(names, ", ")
-}
-
-func formatEvaluationTime(dateStr string) string {
-	if dateStr == "" {
-		return "N/A"
-	}
-
-	t, err := time.Parse(time.RFC3339, dateStr)
-	if err != nil {
-		return dateStr
-	}
-
-	return t.Format("2006-01-02 15:04")
 }

@@ -144,7 +144,7 @@ func displayUserProjects(login string, projects []ProjectUser) {
 		for _, project := range inProgress {
 			fmt.Printf("🔄 %s", project.Project.Name)
 			if project.MarkedAt != "" {
-				fmt.Printf(" (Started: %s)", formatDate(project.MarkedAt))
+				fmt.Printf(" (Started: %s)", FormatDate(project.MarkedAt))
 			}
 			fmt.Println()
 		}
@@ -161,7 +161,7 @@ func displayUserProjects(login string, projects []ProjectUser) {
 				fmt.Print(" (Retriable)")
 			}
 			if project.MarkedAt != "" {
-				fmt.Printf(" (Failed: %s)", formatDate(project.MarkedAt))
+				fmt.Printf(" (Failed: %s)", FormatDate(project.MarkedAt))
 			}
 			fmt.Println()
 		}
