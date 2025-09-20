@@ -13,7 +13,7 @@ import (
 )
 
 func GetAccessToken() (string, error) {
-	return GetApplicationToken()
+	return GetUserToken()
 }
 
 func GetApplicationToken() (string, error) {
