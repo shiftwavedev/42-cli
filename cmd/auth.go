@@ -72,7 +72,7 @@ var tokenCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("=== Stored Authentication Credentials ===")
 		ids := [3]string{"login42", "client_uid", "client_secret"}
-		for index := 0; index < 3; index++ {
+		for index := range 3 {
 			data, err := keyring.Get(service, ids[index])
 			checkError(err, "Keyring data not found")
 			fmt.Printf("%v: %v\n", ids[index], data)
