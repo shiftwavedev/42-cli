@@ -13,28 +13,56 @@ import (
 	"github.com/zalando/go-keyring"
 )
 
+type CorrectionUser struct {
+	ID    int    `json:"id"`
+	Login string `json:"login"`
+	URL   string `json:"url"`
+}
+
 type ScaleTeam struct {
-	ID                   int      `json:"id"`
-	Scale                Scale    `json:"scale"`
-	Comment              string   `json:"comment"`
-	CreatedAt            string   `json:"created_at"`
-	UpdatedAt            string   `json:"updated_at"`
-	Feedback             string   `json:"feedback"`
-	FinalMark            *int     `json:"final_mark"`
-	Flag                 Flag     `json:"flag"`
-	BeginAt              string   `json:"begin_at"`
-	Correcteds           any      `json:"correcteds"`
-	Correctors           any      `json:"correctors"`
-	Truant               struct{} `json:"truant"`
-	FilledAt             *string  `json:"filled_at"`
-	QuestionsWithAnswers []any    `json:"questions_with_answers"`
-	Team                 TeamInfo `json:"team"`
+	ID                   int              `json:"id"`
+	ScaleID              int              `json:"scale_id"`
+	Comment              *string          `json:"comment"`
+	CreatedAt            string           `json:"created_at"`
+	UpdatedAt            string           `json:"updated_at"`
+	Feedback             *string          `json:"feedback"`
+	FinalMark            *int             `json:"final_mark"`
+	Flag                 Flag             `json:"flag"`
+	BeginAt              string           `json:"begin_at"`
+	Correcteds           []CorrectionUser `json:"correcteds"`
+	Corrector            CorrectionUser   `json:"corrector"`
+	Truant               struct{}         `json:"truant"`
+	FilledAt             *string          `json:"filled_at"`
+	QuestionsWithAnswers []any            `json:"questions_with_answers"`
+	Scale                Scale            `json:"scale"`
+	Team                 TeamInfo         `json:"team"`
+	Feedbacks            []any            `json:"feedbacks"`
+}
+
+type Language struct {
+	ID         int    `json:"id"`
+	Name       string `json:"name"`
+	Identifier string `json:"identifier"`
+	CreatedAt  string `json:"created_at"`
+	UpdatedAt  string `json:"updated_at"`
 }
 
 type Scale struct {
-	ID               int `json:"id"`
-	CorrectionNumber int `json:"correction_number"`
-	Duration         int `json:"duration"`
+	ID                 int        `json:"id"`
+	EvaluationID       int        `json:"evaluation_id"`
+	Name               string     `json:"name"`
+	IsPrimary          bool       `json:"is_primary"`
+	Comment            string     `json:"comment"`
+	IntroductionMd     string     `json:"introduction_md"`
+	DisclaimerMd       string     `json:"disclaimer_md"`
+	GuidelinesMd       string     `json:"guidelines_md"`
+	CreatedAt          string     `json:"created_at"`
+	CorrectionNumber   int        `json:"correction_number"`
+	Duration           int        `json:"duration"`
+	ManualSubscription bool       `json:"manual_subscription"`
+	Languages          []Language `json:"languages"`
+	Flags              []Flag     `json:"flags"`
+	Free               bool       `json:"free"`
 }
 
 type Flag struct {
@@ -46,31 +74,43 @@ type Flag struct {
 	UpdatedAt string `json:"updated_at"`
 }
 
+type TeamUser struct {
+	ID             int    `json:"id"`
+	Login          string `json:"login"`
+	URL            string `json:"url"`
+	Leader         bool   `json:"leader"`
+	Occurrence     int    `json:"occurrence"`
+	Validated      bool   `json:"validated"`
+	ProjectsUserID int    `json:"projects_user_id"`
+}
+
+type CorrectionProject struct {
+	ID   int    `json:"id"`
+	Name string `json:"name"`
+	Slug string `json:"slug"`
+}
+
 type TeamInfo struct {
-	ID            int     `json:"id"`
-	Name          string  `json:"name"`
-	URL           string  `json:"url"`
-	FinalMark     *int    `json:"final_mark"`
-	ProjectID     int     `json:"project_id"`
-	CreatedAt     string  `json:"created_at"`
-	UpdatedAt     string  `json:"updated_at"`
-	Status        string  `json:"status"`
-	TerminatingAt *string `json:"terminating_at"`
-	Users         []struct {
-		ID             int    `json:"id"`
-		Login          string `json:"login"`
-		URL            string `json:"url"`
-		Leader         bool   `json:"leader"`
-		Occurrence     int    `json:"occurrence"`
-		Validated      bool   `json:"validated"`
-		ProjectsUserID int    `json:"projects_user_id"`
-	} `json:"users"`
-	ProjectSessionID int `json:"project_session_id"`
-	Project          struct {
-		ID   int    `json:"id"`
-		Name string `json:"name"`
-		Slug string `json:"slug"`
-	} `json:"project"`
+	ID                int               `json:"id"`
+	Name              string            `json:"name"`
+	URL               string            `json:"url"`
+	FinalMark         *int              `json:"final_mark"`
+	ProjectID         int               `json:"project_id"`
+	CreatedAt         string            `json:"created_at"`
+	UpdatedAt         string            `json:"updated_at"`
+	Status            string            `json:"status"`
+	TerminatingAt     *string           `json:"terminating_at"`
+	Users             []TeamUser        `json:"users"`
+	Locked            bool              `json:"locked?"`
+	Validated         *bool             `json:"validated?"`
+	Closed            bool              `json:"closed?"`
+	RepoURL           string            `json:"repo_url"`
+	RepoUUID          string            `json:"repo_uuid"`
+	LockedAt          string            `json:"locked_at"`
+	ClosedAt          string            `json:"closed_at"`
+	ProjectSessionID  int               `json:"project_session_id"`
+	ProjectGitlabPath string            `json:"project_gitlab_path"`
+	Project           CorrectionProject `json:"project"`
 }
 
 var correctionsCmd = &cobra.Command{
@@ -83,22 +123,28 @@ var correctionsCmd = &cobra.Command{
 			log.Fatal("Error: You need to login first. Use '42-cli auth login'")
 		}
 
-		scaleTeams, err := getCorrections(login42)
+		toCorrect, err := getCorrectionsAsCorrector()
 		if err != nil {
-			log.Fatal("Error fetching corrections information:", err)
+			log.Fatal("Error fetching corrections to give:", err)
 		}
-		displayCorrections(login42, scaleTeams)
+
+		toReceive, err := getCorrectionsAsCorrected()
+		if err != nil {
+			log.Fatal("Error fetching corrections to receive:", err)
+		}
+
+		displayCorrections(login42, toCorrect, toReceive)
 	},
 }
 
-func getCorrections(login string) ([]ScaleTeam, error) {
+func getCorrectionsAsCorrector() ([]ScaleTeam, error) {
 	token, err := GetAccessToken()
 	if err != nil {
 		return nil, err
 	}
 
 	client := &http.Client{Timeout: 30 * time.Second}
-	req, err := http.NewRequest("GET", fmt.Sprintf("https://api.intra.42.fr/v2/users/%s/scale_teams", login), nil)
+	req, err := http.NewRequest("GET", "https://api.intra.42.fr/v2/me/scale_teams/as_corrector", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -113,7 +159,8 @@ func getCorrections(login string) ([]ScaleTeam, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("API request failed with status: %d", resp.StatusCode)
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("API request failed with status: %d, response: %s", resp.StatusCode, string(body))
 	}
 
 	body, err := io.ReadAll(resp.Body)
@@ -129,26 +176,47 @@ func getCorrections(login string) ([]ScaleTeam, error) {
 	return scaleTeams, nil
 }
 
-func displayCorrections(login string, scaleTeams []ScaleTeam) {
-	fmt.Printf("=== Corrections: %s ===\n\n", login)
-
-	if len(scaleTeams) == 0 {
-		fmt.Println("No corrections or evaluations found.")
-		return
+func getCorrectionsAsCorrected() ([]ScaleTeam, error) {
+	token, err := GetAccessToken()
+	if err != nil {
+		return nil, err
 	}
 
-	toCorrect := []ScaleTeam{}
-	toReceive := []ScaleTeam{}
-
-	for _, st := range scaleTeams {
-		if st.FilledAt == nil {
-			if isCorrectorForUser(st.Correctors, login) {
-				toCorrect = append(toCorrect, st)
-			} else {
-				toReceive = append(toReceive, st)
-			}
-		}
+	client := &http.Client{Timeout: 30 * time.Second}
+	req, err := http.NewRequest("GET", "https://api.intra.42.fr/v2/me/scale_teams/as_corrected", nil)
+	if err != nil {
+		return nil, err
 	}
+
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("API request failed with status: %d, response: %s", resp.StatusCode, string(body))
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	var scaleTeams []ScaleTeam
+	if err := json.Unmarshal(body, &scaleTeams); err != nil {
+		return nil, err
+	}
+
+	return scaleTeams, nil
+}
+
+func displayCorrections(login string, toCorrect []ScaleTeam, toReceive []ScaleTeam) {
+	fmt.Print("=== Corrections ===\n\n")
 
 	if len(toCorrect) > 0 {
 		fmt.Printf("🔍 Corrections to Give (%d)\n", len(toCorrect))
@@ -177,7 +245,7 @@ func displayCorrections(login string, scaleTeams []ScaleTeam) {
 
 			fmt.Printf("   • %s - %s\n", projectName, teamName)
 			fmt.Printf("     📅 %s\n", formatEvaluationTime(st.BeginAt))
-			fmt.Printf("     👤 Corrector: %s\n", formatCorrectors(st.Correctors))
+			fmt.Printf("     👤 Corrector: %s\n", st.Corrector.Login)
 			fmt.Println()
 		}
 	}
@@ -197,53 +265,12 @@ func getProjectName(st ScaleTeam) string {
 	return "Unknown Project"
 }
 
-func getStudentNames(users []struct {
-	ID             int    `json:"id"`
-	Login          string `json:"login"`
-	URL            string `json:"url"`
-	Leader         bool   `json:"leader"`
-	Occurrence     int    `json:"occurrence"`
-	Validated      bool   `json:"validated"`
-	ProjectsUserID int    `json:"projects_user_id"`
-}) string {
+func getStudentNames(users []TeamUser) string {
 	var names []string
 	for _, user := range users {
 		names = append(names, user.Login)
 	}
 	return strings.Join(names, ", ")
-}
-
-func isCorrectorForUser(correctors any, login string) bool {
-	switch v := correctors.(type) {
-	case string:
-		return strings.Contains(strings.ToLower(v), strings.ToLower(login))
-	case []any:
-		for _, corrector := range v {
-			if correctorStr, ok := corrector.(string); ok {
-				if strings.Contains(strings.ToLower(correctorStr), strings.ToLower(login)) {
-					return true
-				}
-			}
-		}
-	}
-	return false
-}
-
-func formatCorrectors(correctors any) string {
-	switch v := correctors.(type) {
-	case string:
-		return v
-	case []any:
-		var names []string
-		for _, corrector := range v {
-			if correctorStr, ok := corrector.(string); ok {
-				names = append(names, correctorStr)
-			}
-		}
-		return strings.Join(names, ", ")
-	default:
-		return "Unknown"
-	}
 }
 
 func formatEvaluationTime(dateStr string) string {
