@@ -149,7 +149,7 @@ func displayUserProjects(login string, projects []Project) {
 		if status == "finished" && project.Validated {
 			finished = append(finished, project)
 		}
-		if status == "in_progress" && !project.Validated {
+		if (status == "waiting_for_correction" || status == "in_progress") && !project.Validated {
 			inProgress = append(inProgress, project)
 		}
 		if status == "failed" {
