@@ -48,7 +48,7 @@ jobs:
           fi
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: 42-cli-${{ matrix.goos }}-${{ matrix.goarch }}
           path: 42-cli-*
