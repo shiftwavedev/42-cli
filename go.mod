@@ -5,7 +5,7 @@ go 1.23.0
 toolchain go1.24.5
 
 require (
-	github.com/spf13/cobra v1.10.1
+	github.com/spf13/cobra v1.10.2
 	github.com/zalando/go-keyring v0.2.6
 )
 
