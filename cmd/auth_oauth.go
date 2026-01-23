@@ -9,10 +9,7 @@ import (
 	"net/url"
 	"os/exec"
 	"runtime"
-	"strconv"
 	"time"
-
-	"github.com/zalando/go-keyring"
 
 	"github.com/shiftwavedev/42-cli/internal/api"
 )
@@ -129,23 +126,8 @@ func performOAuthLogin(clientID, clientSecret string) error {
 		return fmt.Errorf("token exchange error: %v", err)
 	}
 
-	expiry := time.Now().Unix() + int64(tokenResp.ExpiresIn) - 300
-
-	err = keyring.Set(service, "user_access_token", tokenResp.AccessToken)
-	if err != nil {
-		return fmt.Errorf("failed to store user access token: %v", err)
-	}
-
-	err = keyring.Set(service, "user_token_expiry", strconv.FormatInt(expiry, 10))
-	if err != nil {
-		return fmt.Errorf("failed to store user token expiry: %v", err)
-	}
-
-	if tokenResp.RefreshToken != "" {
-		err = keyring.Set(service, "user_refresh_token", tokenResp.RefreshToken)
-		if err != nil {
-			return fmt.Errorf("failed to store user refresh token: %v", err)
-		}
+	if err := StoreOAuthToken(tokenResp); err != nil {
+		return fmt.Errorf("failed to store OAuth token: %v", err)
 	}
 
 	return nil
