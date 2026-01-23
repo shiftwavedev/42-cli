@@ -8,17 +8,9 @@ This tool offers an alternative way to interact with 42's systems directly from 
 
 <img src="./assets/preview.gif" alt="42-cli Demo" height="360px" width="auto" />
 
-## Features
-
-- 🔐 Secure authentication with system keyring integration
-- 📊 Access to 42 intranet data through the terminal
-- 🚀 Fast and lightweight CLI built with Go
-- 🏃‍♂️ Faster data retrieval compared to web interface
-- 🔧 Cross-platform support (macOS, Linux, Windows)
-
 ## Requirements
 
-- Go 1.23 or later (for building from source)
+- Go 1.25.6 or later (for building from source)
 - 42 School account and API credentials
 
 ## Installation
