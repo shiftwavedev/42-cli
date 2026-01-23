@@ -12,6 +12,13 @@ import (
 
 const service string = "42-cli"
 
+func maskToken(token string) string {
+	if len(token) <= 16 {
+		return "****"
+	}
+	return token[:8] + "..." + token[len(token)-8:]
+}
+
 var authCmd = &cobra.Command{
 	Use:   "auth",
 	Short: "Authentication commands for 42 intranet",
@@ -84,7 +91,11 @@ var tokenCmd = &cobra.Command{
 				fmt.Printf("%v: <not found>\n", ids[index])
 				continue
 			}
-			fmt.Printf("%v: %v\n", ids[index], data)
+			if ids[index] == "client_secret" {
+				fmt.Printf("%v: %v\n", ids[index], maskToken(data))
+			} else {
+				fmt.Printf("%v: %v\n", ids[index], data)
+			}
 		}
 
 		fmt.Println("\n=== Application Token (Client Credentials) ===")
@@ -92,7 +103,7 @@ var tokenCmd = &cobra.Command{
 		if err != nil {
 			fmt.Printf("Error getting application token: %v\n", err)
 		} else {
-			fmt.Printf("access_token: %s\n", appToken)
+			fmt.Printf("access_token: %s\n", maskToken(appToken))
 			expiryStr, _ := keyring.Get(service, "token_expiry")
 			display.TokenExpiryInfo(expiryStr)
 		}
@@ -103,13 +114,13 @@ var tokenCmd = &cobra.Command{
 			fmt.Printf("No user token available: %v\n", err)
 			fmt.Println("Run '42-cli auth login' to authenticate with OAuth")
 		} else {
-			fmt.Printf("access_token: %s\n", userToken)
+			fmt.Printf("access_token: %s\n", maskToken(userToken))
 			expiryStr, _ := keyring.Get(service, "user_token_expiry")
 			display.TokenExpiryInfo(expiryStr)
 
 			refreshToken, err := keyring.Get(service, "user_refresh_token")
 			if err == nil && refreshToken != "" {
-				fmt.Printf("refresh_token: %s\n", refreshToken)
+				fmt.Printf("refresh_token: %s\n", maskToken(refreshToken))
 			}
 		}
 	},
