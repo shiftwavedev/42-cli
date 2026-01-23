@@ -29,7 +29,9 @@ var loginCmd = &cobra.Command{
 			log.Fatal("Error: Invalid credentials format")
 		}
 
-		registerKeyring(login42, clientUid, clientSecret)
+		if err := registerKeyring(login42, clientUid, clientSecret); err != nil {
+			log.Fatalf("Failed to store credentials: %v", err)
+		}
 		fmt.Println("Credentials stored successfully")
 		fmt.Println("Starting OAuth authentication...")
 
@@ -46,7 +48,9 @@ var logoutCmd = &cobra.Command{
 	Use:   "logout",
 	Short: "Remove stored authentication credentials",
 	Run: func(cmd *cobra.Command, args []string) {
-		unregisterKeyring()
+		if err := unregisterKeyring(); err != nil {
+			log.Fatalf("Failed to remove credentials: %v", err)
+		}
 		fmt.Println("Authentication credentials removed successfully")
 	},
 }
@@ -61,7 +65,9 @@ var updateCmd = &cobra.Command{
 		if !isValidData {
 			log.Fatal("Error: Invalid credentials format")
 		}
-		registerKeyring(login42, clientUid, clientSecret)
+		if err := registerKeyring(login42, clientUid, clientSecret); err != nil {
+			log.Fatalf("Failed to update credentials: %v", err)
+		}
 		fmt.Println("Authentication credentials updated successfully")
 	},
 }
@@ -74,7 +80,10 @@ var tokenCmd = &cobra.Command{
 		ids := [3]string{"login42", "client_uid", "client_secret"}
 		for index := range 3 {
 			data, err := keyring.Get(service, ids[index])
-			checkError(err, "Keyring data not found")
+			if err != nil {
+				fmt.Printf("%v: <not found>\n", ids[index])
+				continue
+			}
 			fmt.Printf("%v: %v\n", ids[index], data)
 		}
 

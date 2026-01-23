@@ -1,17 +1,11 @@
 package cmd
 
 import (
-	"log"
+	"fmt"
 	"regexp"
 
 	"github.com/zalando/go-keyring"
 )
-
-func checkError(err error, message string) {
-	if err != nil {
-		log.Fatal("Error: " + message)
-	}
-}
 
 func dataCheck(login42 string, clientUid string, clientSecret string) bool {
 	checkLogin42, _ := regexp.Match("^[a-z-]+$", []byte(login42))
@@ -20,20 +14,25 @@ func dataCheck(login42 string, clientUid string, clientSecret string) bool {
 	return checkLogin42 && checkClientUID && checkSecretUID
 }
 
-func registerKeyring(login42 string, clientUid string, clientSecret string) {
-	ids := [3]string{"login42", "client_uid", "client_secret"}
-	var err error
-	err = keyring.Set(service, ids[0], login42)
-	checkError(err, "Authentication regiter operation failed (login 42)")
+func registerKeyring(login42 string, clientUid string, clientSecret string) error {
+	if err := keyring.Set(service, "login42", login42); err != nil {
+		return fmt.Errorf("failed to store login42 in keyring: %w", err)
+	}
 
-	err = keyring.Set(service, ids[1], clientUid)
-	checkError(err, "Authentication regiter operation failed (client_id)")
+	if err := keyring.Set(service, "client_uid", clientUid); err != nil {
+		return fmt.Errorf("failed to store client_uid in keyring: %w", err)
+	}
 
-	err = keyring.Set(service, ids[2], clientSecret)
-	checkError(err, "Authentication regiter operation failed (client_secret)")
+	if err := keyring.Set(service, "client_secret", clientSecret); err != nil {
+		return fmt.Errorf("failed to store client_secret in keyring: %w", err)
+	}
+
+	return nil
 }
 
-func unregisterKeyring() {
-	err := keyring.DeleteAll(service)
-	checkError(err, "Unregiter operation failed")
+func unregisterKeyring() error {
+	if err := keyring.DeleteAll(service); err != nil {
+		return fmt.Errorf("failed to clear keyring: %w", err)
+	}
+	return nil
 }
