@@ -8,9 +8,17 @@ import (
 	"github.com/zalando/go-keyring"
 
 	"github.com/shiftwavedev/42-cli/internal/display"
+	"github.com/shiftwavedev/42-cli/pkg/credentials"
 )
 
 const service string = "42-cli"
+
+var credManager *credentials.Manager
+
+func init() {
+	storage := credentials.NewKeyringStorage(service)
+	credManager = credentials.NewManager(storage)
+}
 
 func maskToken(token string) string {
 	if len(token) <= 16 {
@@ -30,19 +38,19 @@ var loginCmd = &cobra.Command{
 	Short: "Store authentication credentials and authenticate with 42 API using OAuth",
 	Args:  cobra.ExactArgs(3),
 	Run: func(cmd *cobra.Command, args []string) {
-		login42, clientUid, clientSecret := args[0], args[1], args[2]
-		isValidData := dataCheck(login42, clientUid, clientSecret)
-		if !isValidData {
-			log.Fatal("Error: Invalid credentials format")
+		creds := &credentials.Credentials{
+			Login42:      args[0],
+			ClientID:     args[1],
+			ClientSecret: args[2],
 		}
 
-		if err := registerKeyring(login42, clientUid, clientSecret); err != nil {
+		if err := credManager.Store(creds); err != nil {
 			log.Fatalf("Failed to store credentials: %v", err)
 		}
 		fmt.Println("Credentials stored successfully")
 		fmt.Println("Starting OAuth authentication...")
 
-		err := performOAuthLogin(clientUid, clientSecret)
+		err := performOAuthLogin(creds.ClientID, creds.ClientSecret)
 		if err != nil {
 			log.Fatalf("OAuth authentication failed: %v", err)
 		}
@@ -55,7 +63,7 @@ var logoutCmd = &cobra.Command{
 	Use:   "logout",
 	Short: "Remove stored authentication credentials",
 	Run: func(cmd *cobra.Command, args []string) {
-		if err := unregisterKeyring(); err != nil {
+		if err := credManager.Clear(); err != nil {
 			log.Fatalf("Failed to remove credentials: %v", err)
 		}
 		fmt.Println("Authentication credentials removed successfully")
@@ -67,12 +75,13 @@ var updateCmd = &cobra.Command{
 	Short: "Update stored authentication credentials",
 	Args:  cobra.ExactArgs(3),
 	Run: func(cmd *cobra.Command, args []string) {
-		login42, clientUid, clientSecret := args[0], args[1], args[2]
-		isValidData := dataCheck(login42, clientUid, clientSecret)
-		if !isValidData {
-			log.Fatal("Error: Invalid credentials format")
+		creds := &credentials.Credentials{
+			Login42:      args[0],
+			ClientID:     args[1],
+			ClientSecret: args[2],
 		}
-		if err := registerKeyring(login42, clientUid, clientSecret); err != nil {
+
+		if err := credManager.Store(creds); err != nil {
 			log.Fatalf("Failed to update credentials: %v", err)
 		}
 		fmt.Println("Authentication credentials updated successfully")
