@@ -3,11 +3,11 @@ package cmd
 import (
 	"fmt"
 	"log"
-	"strconv"
-	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/zalando/go-keyring"
+
+	"github.com/shiftwavedev/42-cli/internal/display"
 )
 
 const service string = "42-cli"
@@ -84,22 +84,8 @@ var tokenCmd = &cobra.Command{
 			fmt.Printf("Error getting application token: %v\n", err)
 		} else {
 			fmt.Printf("access_token: %s\n", appToken)
-
-			expiryStr, err := keyring.Get(service, "token_expiry")
-			if err == nil {
-				expiry, err := strconv.ParseInt(expiryStr, 10, 64)
-				if err == nil {
-					expiryTime := time.Unix(expiry, 0)
-					fmt.Printf("expires_at: %s\n", expiryTime.Format("2006-01-02 15:04:05"))
-
-					timeLeft := time.Until(expiryTime)
-					if timeLeft > 0 {
-						fmt.Printf("time_left: %v\n", timeLeft.Round(time.Minute))
-					} else {
-						fmt.Printf("status: expired\n")
-					}
-				}
-			}
+			expiryStr, _ := keyring.Get(service, "token_expiry")
+			display.TokenExpiryInfo(expiryStr)
 		}
 
 		fmt.Println("\n=== User Token (OAuth) ===")
@@ -109,22 +95,8 @@ var tokenCmd = &cobra.Command{
 			fmt.Println("Run '42-cli auth login' to authenticate with OAuth")
 		} else {
 			fmt.Printf("access_token: %s\n", userToken)
-
-			expiryStr, err := keyring.Get(service, "user_token_expiry")
-			if err == nil {
-				expiry, err := strconv.ParseInt(expiryStr, 10, 64)
-				if err == nil {
-					expiryTime := time.Unix(expiry, 0)
-					fmt.Printf("expires_at: %s\n", expiryTime.Format("2006-01-02 15:04:05"))
-
-					timeLeft := time.Until(expiryTime)
-					if timeLeft > 0 {
-						fmt.Printf("time_left: %v\n", timeLeft.Round(time.Minute))
-					} else {
-						fmt.Printf("status: expired\n")
-					}
-				}
-			}
+			expiryStr, _ := keyring.Get(service, "user_token_expiry")
+			display.TokenExpiryInfo(expiryStr)
 
 			refreshToken, err := keyring.Get(service, "user_refresh_token")
 			if err == nil && refreshToken != "" {

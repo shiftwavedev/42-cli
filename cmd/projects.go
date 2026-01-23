@@ -1,18 +1,17 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
-	"github.com/spf13/cobra"
-	"github.com/zalando/go-keyring"
-	"io"
 	"log"
-	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
-	"time"
+
+	"github.com/spf13/cobra"
+	"github.com/zalando/go-keyring"
+
+	"github.com/shiftwavedev/42-cli/internal/api"
 )
 
 var projectsCmd = &cobra.Command{
@@ -72,32 +71,9 @@ func getUserProjects(login string) ([]ProjectUser, error) {
 		return nil, err
 	}
 
-	client := &http.Client{Timeout: 30 * time.Second}
-	req, err := http.NewRequest("GET", fmt.Sprintf("https://api.intra.42.fr/v2/users/%s/projects_users", login), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Set("Authorization", "Bearer "+token)
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("API request failed with status: %d", resp.StatusCode)
-	}
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
 	var projects []ProjectUser
-	if err := json.Unmarshal(body, &projects); err != nil {
+	err = api.DefaultClient.Get(fmt.Sprintf("/v2/users/%s/projects_users", login), token, &projects)
+	if err != nil {
 		return nil, err
 	}
 
@@ -228,7 +204,6 @@ func getProjectRepoURL(login, projectName string) (string, error) {
 				return "", err
 			}
 
-			// Find the team with the highest ID (most recent)
 			var latestTeam *Team
 			for _, team := range teams {
 				for _, user := range team.Users {
@@ -255,32 +230,9 @@ func getProjectTeams(projectUserID int) ([]Team, error) {
 		return nil, err
 	}
 
-	client := &http.Client{Timeout: 30 * time.Second}
-	req, err := http.NewRequest("GET", fmt.Sprintf("https://api.intra.42.fr/v2/projects_users/%d", projectUserID), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Set("Authorization", "Bearer "+token)
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("API request failed with status: %d", resp.StatusCode)
-	}
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
 	var projectUser ProjectUser
-	if err := json.Unmarshal(body, &projectUser); err != nil {
+	err = api.DefaultClient.Get(fmt.Sprintf("/v2/projects_users/%d", projectUserID), token, &projectUser)
+	if err != nil {
 		return nil, err
 	}
 

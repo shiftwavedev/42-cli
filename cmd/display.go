@@ -76,9 +76,20 @@ func FormatDateTime(dateStr string) string {
 	return FormatDate(dateStr)
 }
 
-// FormatEvaluationTime formats evaluation time (alias for FormatDate)
+// FormatEvaluationTime formats evaluation time with local timezone conversion
 func FormatEvaluationTime(dateStr string) string {
-	return FormatDate(dateStr)
+	if dateStr == "" {
+		return "N/A"
+	}
+
+	t, err := time.Parse(time.RFC3339, dateStr)
+	if err != nil {
+		return dateStr
+	}
+
+	// Convert to local time
+	localTime := t.Local()
+	return localTime.Format("2006-01-02 15:04")
 }
 
 // FormatDuration formats a duration to human-readable format

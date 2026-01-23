@@ -2,9 +2,7 @@ package cmd
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"net/url"
 	"os/exec"
@@ -13,6 +11,8 @@ import (
 	"time"
 
 	"github.com/zalando/go-keyring"
+
+	"github.com/shiftwavedev/42-cli/internal/api"
 )
 
 func openBrowser(url string) error {
@@ -63,69 +63,12 @@ func startCallbackServer() (*CallbackResponse, error) {
 	return callback, nil
 }
 
-func exchangeCodeForToken(code, clientID, clientSecret, redirectURI string) (*TokenResponse, error) {
-	data := url.Values{}
-	data.Set("grant_type", "authorization_code")
-	data.Set("client_id", clientID)
-	data.Set("client_secret", clientSecret)
-	data.Set("code", code)
-	data.Set("redirect_uri", redirectURI)
-
-	client := &http.Client{Timeout: 30 * time.Second}
-	resp, err := client.PostForm("https://api.intra.42.fr/oauth/token", data)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("token exchange failed with status %d: %s", resp.StatusCode, string(body))
-	}
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	var tokenResp TokenResponse
-	if err := json.Unmarshal(body, &tokenResp); err != nil {
-		return nil, err
-	}
-
-	return &tokenResp, nil
+func exchangeCodeForToken(code, clientID, clientSecret, redirectURI string) (*api.TokenResponse, error) {
+	return api.DefaultClient.ExchangeAuthorizationCode(code, clientID, clientSecret, redirectURI)
 }
 
-func refreshAccessToken(refreshToken, clientID, clientSecret string) (*TokenResponse, error) {
-	data := url.Values{}
-	data.Set("grant_type", "refresh_token")
-	data.Set("refresh_token", refreshToken)
-	data.Set("client_id", clientID)
-	data.Set("client_secret", clientSecret)
-
-	client := &http.Client{Timeout: 30 * time.Second}
-	resp, err := client.PostForm("https://api.intra.42.fr/oauth/token", data)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("token refresh failed with status %d: %s", resp.StatusCode, string(body))
-	}
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	var tokenResp TokenResponse
-	if err := json.Unmarshal(body, &tokenResp); err != nil {
-		return nil, err
-	}
-
-	return &tokenResp, nil
+func refreshAccessToken(refreshToken, clientID, clientSecret string) (*api.TokenResponse, error) {
+	return api.DefaultClient.RefreshToken(refreshToken, clientID, clientSecret)
 }
 
 func performOAuthLogin(clientID, clientSecret string) error {

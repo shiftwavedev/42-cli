@@ -1,15 +1,13 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
-	"net/url"
 	"strconv"
 	"time"
 
 	"github.com/zalando/go-keyring"
+
+	"github.com/shiftwavedev/42-cli/internal/api"
 )
 
 func GetAccessToken() (string, error) {
@@ -63,30 +61,8 @@ func generateNewToken() (string, error) {
 		return "", fmt.Errorf("client secret not found in keyring")
 	}
 
-	data := url.Values{}
-	data.Set("grant_type", "client_credentials")
-	data.Set("client_id", clientID)
-	data.Set("client_secret", clientSecret)
-	data.Set("scope", "public profile")
-
-	client := &http.Client{Timeout: 30 * time.Second}
-	resp, err := client.PostForm("https://api.intra.42.fr/oauth/token", data)
+	tokenResp, err := api.DefaultClient.GetClientCredentialsToken(clientID, clientSecret)
 	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("authentication failed with status: %d", resp.StatusCode)
-	}
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return "", err
-	}
-
-	var tokenResp TokenResponse
-	if err := json.Unmarshal(body, &tokenResp); err != nil {
 		return "", err
 	}
 

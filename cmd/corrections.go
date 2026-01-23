@@ -1,15 +1,13 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
-	"io"
 	"log"
-	"net/http"
-	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/zalando/go-keyring"
+
+	"github.com/shiftwavedev/42-cli/internal/api"
 )
 
 var correctionsCmd = &cobra.Command{
@@ -31,7 +29,6 @@ var correctionsCmd = &cobra.Command{
 		if err != nil {
 			log.Fatal("Error fetching corrections to receive:", err)
 		}
-
 		displayCorrections(toCorrect, toReceive)
 	},
 }
@@ -42,33 +39,9 @@ func getCorrectionsAsCorrector() ([]ScaleTeam, error) {
 		return nil, err
 	}
 
-	client := &http.Client{Timeout: 30 * time.Second}
-	req, err := http.NewRequest("GET", "https://api.intra.42.fr/v2/me/scale_teams/as_corrector", nil)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Set("Authorization", "Bearer "+token)
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("API request failed with status: %d, response: %s", resp.StatusCode, string(body))
-	}
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
 	var scaleTeams []ScaleTeam
-	if err := json.Unmarshal(body, &scaleTeams); err != nil {
+	err = api.DefaultClient.Get("/v2/me/scale_teams/as_corrector", token, &scaleTeams)
+	if err != nil {
 		return nil, err
 	}
 
@@ -81,33 +54,9 @@ func getCorrectionsAsCorrected() ([]ScaleTeam, error) {
 		return nil, err
 	}
 
-	client := &http.Client{Timeout: 30 * time.Second}
-	req, err := http.NewRequest("GET", "https://api.intra.42.fr/v2/me/scale_teams/as_corrected", nil)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Set("Authorization", "Bearer "+token)
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("API request failed with status: %d, response: %s", resp.StatusCode, string(body))
-	}
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
 	var scaleTeams []ScaleTeam
-	if err := json.Unmarshal(body, &scaleTeams); err != nil {
+	err = api.DefaultClient.Get("/v2/me/scale_teams/as_corrected", token, &scaleTeams)
+	if err != nil {
 		return nil, err
 	}
 

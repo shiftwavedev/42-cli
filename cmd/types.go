@@ -1,5 +1,7 @@
 package cmd
 
+import "encoding/json"
+
 // Common API structures for 42 Intranet API
 
 // User represents a 42 user with basic information
@@ -147,25 +149,45 @@ type Scale struct {
 	Free               bool       `json:"free"`
 }
 
+// Correcteds handles flexible JSON unmarshaling for correcteds field
+// The API sometimes returns an empty string instead of an empty array
+type Correcteds []User
+
+func (c *Correcteds) UnmarshalJSON(data []byte) error {
+	// If it's a string (empty or otherwise), treat as empty array
+	if len(data) > 0 && data[0] == '"' {
+		*c = []User{}
+		return nil
+	}
+
+	// Otherwise, unmarshal as normal array
+	var users []User
+	if err := json.Unmarshal(data, &users); err != nil {
+		return err
+	}
+	*c = users
+	return nil
+}
+
 // ScaleTeam represents a scale team evaluation
 type ScaleTeam struct {
-	ID                   int      `json:"id"`
-	ScaleID              int      `json:"scale_id"`
-	Comment              *string  `json:"comment"`
-	CreatedAt            string   `json:"created_at"`
-	UpdatedAt            string   `json:"updated_at"`
-	Feedback             *string  `json:"feedback"`
-	FinalMark            *int     `json:"final_mark"`
-	Flag                 Flag     `json:"flag"`
-	BeginAt              string   `json:"begin_at"`
-	Correcteds           []User   `json:"correcteds"`
-	Corrector            User     `json:"corrector"`
-	Truant               struct{} `json:"truant"`
-	FilledAt             *string  `json:"filled_at"`
-	QuestionsWithAnswers []any    `json:"questions_with_answers"`
-	Scale                Scale    `json:"scale"`
-	Team                 TeamInfo `json:"team"`
-	Feedbacks            []any    `json:"feedbacks"`
+	ID                   int        `json:"id"`
+	ScaleID              int        `json:"scale_id"`
+	Comment              *string    `json:"comment"`
+	CreatedAt            string     `json:"created_at"`
+	UpdatedAt            string     `json:"updated_at"`
+	Feedback             *string    `json:"feedback"`
+	FinalMark            *int       `json:"final_mark"`
+	Flag                 Flag       `json:"flag"`
+	BeginAt              string     `json:"begin_at"`
+	Correcteds           Correcteds `json:"correcteds"`
+	Corrector            User       `json:"corrector"`
+	Truant               struct{}   `json:"truant"`
+	FilledAt             *string    `json:"filled_at"`
+	QuestionsWithAnswers []any      `json:"questions_with_answers"`
+	Scale                Scale      `json:"scale"`
+	Team                 TeamInfo   `json:"team"`
+	Feedbacks            []any      `json:"feedbacks"`
 }
 
 // Location represents user location information
@@ -177,16 +199,6 @@ type Location struct {
 	Host     string  `json:"host"`
 	CampusID int     `json:"campus_id"`
 	User     User    `json:"user"`
-}
-
-// TokenResponse represents OAuth token response
-type TokenResponse struct {
-	AccessToken  string `json:"access_token"`
-	TokenType    string `json:"token_type"`
-	ExpiresIn    int    `json:"expires_in"`
-	Scope        string `json:"scope"`
-	CreatedAt    int64  `json:"created_at"`
-	RefreshToken string `json:"refresh_token"`
 }
 
 // CallbackResponse represents OAuth callback response

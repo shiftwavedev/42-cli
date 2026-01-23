@@ -1,14 +1,13 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
+	"log"
+
 	"github.com/spf13/cobra"
 	"github.com/zalando/go-keyring"
-	"io"
-	"log"
-	"net/http"
-	"time"
+
+	"github.com/shiftwavedev/42-cli/internal/api"
 )
 
 var userCmd = &cobra.Command{
@@ -67,32 +66,9 @@ func getUserProfile(login string) (*UserProfile, error) {
 		return nil, err
 	}
 
-	client := &http.Client{Timeout: 30 * time.Second}
-	req, err := http.NewRequest("GET", fmt.Sprintf("https://api.intra.42.fr/v2/users/%s", login), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Set("Authorization", "Bearer "+token)
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("API request failed with status: %d", resp.StatusCode)
-	}
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
 	var user UserProfile
-	if err := json.Unmarshal(body, &user); err != nil {
+	err = api.DefaultClient.Get(fmt.Sprintf("/v2/users/%s", login), token, &user)
+	if err != nil {
 		return nil, err
 	}
 
@@ -151,32 +127,9 @@ func getLocationInfo(login string) ([]Location, error) {
 		return nil, err
 	}
 
-	client := &http.Client{Timeout: 30 * time.Second}
-	req, err := http.NewRequest("GET", fmt.Sprintf("https://api.intra.42.fr/v2/users/%s/locations", login), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Set("Authorization", "Bearer "+token)
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("API request failed with status: %d", resp.StatusCode)
-	}
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
 	var locations []Location
-	if err := json.Unmarshal(body, &locations); err != nil {
+	err = api.DefaultClient.Get(fmt.Sprintf("/v2/users/%s/locations", login), token, &locations)
+	if err != nil {
 		return nil, err
 	}
 
