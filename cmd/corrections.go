@@ -5,7 +5,6 @@ import (
 	"log"
 
 	"github.com/spf13/cobra"
-	"github.com/zalando/go-keyring"
 
 	"github.com/shiftwavedev/42-cli/internal/api"
 )
@@ -15,7 +14,7 @@ var correctionsCmd = &cobra.Command{
 	Short: "Display your corrections to give and evaluations to receive",
 	Long:  "Display your upcoming corrections to give and evaluations to receive.",
 	Run: func(cmd *cobra.Command, args []string) {
-		_, err := keyring.Get(service, "login42")
+		_, err := credManager.GetLogin()
 		if err != nil {
 			log.Fatal("Error: You need to login first. Use '42-cli auth login'")
 		}

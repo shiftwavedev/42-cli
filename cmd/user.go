@@ -5,9 +5,9 @@ import (
 	"log"
 
 	"github.com/spf13/cobra"
-	"github.com/zalando/go-keyring"
 
 	"github.com/shiftwavedev/42-cli/internal/api"
+	"github.com/shiftwavedev/42-cli/internal/helpers"
 )
 
 var userCmd = &cobra.Command{
@@ -16,15 +16,9 @@ var userCmd = &cobra.Command{
 	Long:  "Display user profile information. If no login is provided, shows your own profile.",
 	Args:  cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		var login string
-		if len(args) == 0 {
-			login42, err := keyring.Get(service, "login42")
-			if err != nil {
-				log.Fatal("Error: You need to login first. Use '42-cli auth login'")
-			}
-			login = login42
-		} else {
-			login = args[0]
+		login, err := helpers.GetLoginOrDefault(args, credManager)
+		if err != nil {
+			log.Fatal("Error:", err)
 		}
 
 		user, err := getUserProfile(login)
@@ -41,15 +35,9 @@ var locationCmd = &cobra.Command{
 	Long:  "Display current and recent location information for a user. If no login is provided, shows your own location.",
 	Args:  cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		var login string
-		if len(args) == 0 {
-			login42, err := keyring.Get(service, "login42")
-			if err != nil {
-				log.Fatal("Error: You need to login first. Use '42-cli auth login'")
-			}
-			login = login42
-		} else {
-			login = args[0]
+		login, err := helpers.GetLoginOrDefault(args, credManager)
+		if err != nil {
+			log.Fatal("Error:", err)
 		}
 
 		locations, err := getLocationInfo(login)

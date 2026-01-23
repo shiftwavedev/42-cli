@@ -83,10 +83,6 @@ func exchangeCodeForToken(code, clientID, clientSecret, redirectURI string) (*ap
 	return api.DefaultClient.ExchangeAuthorizationCode(code, clientID, clientSecret, redirectURI)
 }
 
-func refreshAccessToken(refreshToken, clientID, clientSecret string) (*api.TokenResponse, error) {
-	return api.DefaultClient.RefreshToken(refreshToken, clientID, clientSecret)
-}
-
 func performOAuthLogin(clientID, clientSecret string) error {
 	redirectURI := "http://localhost:8080/callback"
 

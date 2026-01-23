@@ -9,9 +9,9 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-	"github.com/zalando/go-keyring"
 
 	"github.com/shiftwavedev/42-cli/internal/api"
+	"github.com/shiftwavedev/42-cli/internal/helpers"
 )
 
 var projectsCmd = &cobra.Command{
@@ -20,15 +20,9 @@ var projectsCmd = &cobra.Command{
 	Long:  "Display user projects information including completed and ongoing projects. If no login is provided, shows your own projects.",
 	Args:  cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		var login string
-		if len(args) == 0 {
-			login42, err := keyring.Get(service, "login42")
-			if err != nil {
-				log.Fatal("Error: You need to login first. Use '42-cli auth login'")
-			}
-			login = login42
-		} else {
-			login = args[0]
+		login, err := helpers.GetLoginOrDefault(args, credManager)
+		if err != nil {
+			log.Fatal("Error:", err)
 		}
 
 		projects, err := getUserProjects(login)
@@ -151,7 +145,7 @@ func displayUserProjects(login string, projects []ProjectUser) {
 }
 
 func cloneProject(projectName, targetDir string) error {
-	login42, err := keyring.Get(service, "login42")
+	login, err := credManager.GetLogin()
 	if err != nil {
 		return fmt.Errorf("you need to login first. Use '42-cli auth login'")
 	}
@@ -159,7 +153,7 @@ func cloneProject(projectName, targetDir string) error {
 	fmt.Printf("=== Cloning Project: %s ===\n\n", projectName)
 	fmt.Print("🔍 Finding repository...\n")
 
-	repoURL, err := getProjectRepoURL(login42, projectName)
+	repoURL, err := getProjectRepoURL(login, projectName)
 	if err != nil {
 		return fmt.Errorf("failed to find repository: %v", err)
 	}
