@@ -1,5 +1,10 @@
 # 42-cli
 
+[![CI](https://github.com/shiftwavedev/42-cli/actions/workflows/ci.yml/badge.svg)](https://github.com/shiftwavedev/42-cli/actions/workflows/ci.yml)
+[![Release](https://github.com/shiftwavedev/42-cli/actions/workflows/release.yml/badge.svg)](https://github.com/shiftwavedev/42-cli/actions/workflows/release.yml)
+[![Go Report Card](https://goreportcard.com/badge/github.com/shiftwavedev/42-cli)](https://goreportcard.com/report/github.com/shiftwavedev/42-cli)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+
 42-cli brings [42 School](https://42.fr) intranet to your terminal, providing a command-line interface to access public intranet data.
 
 This tool offers an alternative way to interact with 42's systems directly from your terminal.
@@ -26,8 +31,12 @@ Download the latest release for your platform from the [releases page](https://g
 git clone https://github.com/shiftwavedev/42-cli.git
 cd 42-cli
 
-# Build and install
+# Download dependencies
+go mod download
+
+# Build
 go build -o 42-cli
+
 # Or install globally
 go install
 ```
@@ -92,8 +101,8 @@ Contributions are welcome! Please feel free to submit a Pull Request. For major 
 1. Fork the repository
 2. Create your feature branch (`git checkout -b feature/new-feature`)
 3. Make your changes
-4. Run tests and ensure code quality (`go fmt ./...`, `go vet ./...`)
-5. Commit your changes (`git commit -m 'Add new feature'`)
+4. Run tests and ensure code quality (`go fmt ./...`, `go vet ./...`, `staticcheck ./...`)
+5. Commit your changes using [Conventional Commits](https://www.conventionalcommits.org/)
 6. Push to the branch (`git push origin feature/new-feature`)
 7. Open a Pull Request
 
@@ -117,4 +126,4 @@ Special thanks to the maintainers and contributors of these projects.
 
 ## License
 
-[GNU GPLv3](./LICENSE)
+This project is licensed under the GNU General Public License v3.0, see the [LICENSE](./LICENSE) file for details.
