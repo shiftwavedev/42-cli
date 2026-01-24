@@ -40,10 +40,16 @@ var projectsCmd = &cobra.Command{
 			return
 		}
 
+		spinner := display.NewSimpleSpinner(fmt.Sprintf("Fetching %s's projects...", login))
+		spinner.Start()
+
 		projects, err := getUserProjects(login)
 		if err != nil {
+			spinner.StopWithError("Failed to fetch projects")
 			log.Fatal("Error fetching user projects:", err)
 		}
+		spinner.Stop()
+
 		displayUserProjects(login, projects)
 	},
 }
@@ -90,73 +96,26 @@ func getUserProjects(login string) ([]ProjectUser, error) {
 }
 
 func displayUserProjects(login string, projects []ProjectUser) {
-	var finished []ProjectUser
-	var inProgress []ProjectUser
-	var failed []ProjectUser
-
-	fmt.Printf("=== Projects: %s ===\n", login)
-	if len(projects) == 0 {
-		fmt.Println("No projects found.")
-		return
+	// Convert to display types
+	var displayProjects []display.ProjectInfo
+	for _, p := range projects {
+		teamCount := 0
+		if len(p.Teams) > 0 {
+			teamCount = len(p.Teams[0].Users)
+		}
+		displayProjects = append(displayProjects, display.ProjectInfo{
+			Name:      p.Project.Name,
+			Slug:      p.Project.Slug,
+			Status:    p.Status,
+			Validated: p.Validated,
+			FinalMark: p.FinalMark,
+			MarkedAt:  p.MarkedAt,
+			Retriable: p.Retriable,
+			TeamCount: teamCount,
+		})
 	}
 
-	for _, project := range projects {
-		var status string = strings.ToLower(project.Status)
-		if status == "finished" && project.Validated {
-			finished = append(finished, project)
-		}
-		if (status == "waiting_for_correction" || status == "in_progress") && !project.Validated {
-			inProgress = append(inProgress, project)
-		}
-		if status == "failed" {
-			failed = append(failed, project)
-		}
-	}
-
-	if len(finished) > 0 {
-		fmt.Printf("\n=== Finished Projects (%d) ===\n", len(finished))
-		for _, project := range finished {
-			fmt.Printf("✅ %s", project.Project.Name)
-			if project.FinalMark > 0 {
-				fmt.Printf(" - Score: %d", project.FinalMark)
-			}
-			fmt.Println()
-		}
-	}
-
-	if len(inProgress) > 0 {
-		fmt.Printf("\n=== In Progress Projects (%d) ===\n", len(inProgress))
-		for _, project := range inProgress {
-			fmt.Printf("🔄 %s", project.Project.Name)
-			if project.MarkedAt != "" {
-				fmt.Printf(" (Started: %s)", FormatDate(project.MarkedAt))
-			}
-			fmt.Println()
-		}
-	}
-
-	if len(failed) > 0 {
-		fmt.Printf("\n=== Failed Projects (%d) ===\n", len(failed))
-		for _, project := range failed {
-			fmt.Printf("❌ %s", project.Project.Name)
-			if project.FinalMark >= 0 {
-				fmt.Printf(" - Score: %d", project.FinalMark)
-			}
-			if project.Retriable {
-				fmt.Print(" (Retriable)")
-			}
-			if project.MarkedAt != "" {
-				fmt.Printf(" (Failed: %s)", FormatDate(project.MarkedAt))
-			}
-			fmt.Println()
-		}
-	}
-
-	total := len(projects)
-	fmt.Printf("\n=== Summary ===\n")
-	fmt.Printf("Total Projects: %d\n", total)
-	fmt.Printf("Finished: %d | In Progress: %d | Failed: %d\n",
-		len(finished), len(inProgress), len(failed))
+	fmt.Print(display.RenderProjectsList(login, displayProjects))
 }
 
 func cloneProject(projectName, targetDir string) error {
@@ -165,37 +124,46 @@ func cloneProject(projectName, targetDir string) error {
 		return fmt.Errorf("you need to login first. Use '42-cli auth login'")
 	}
 
-	fmt.Printf("=== Cloning Project: %s ===\n\n", projectName)
-	fmt.Print("🔍 Finding repository...\n")
+	fmt.Println(display.Header("Clone Project", projectName))
+	fmt.Println()
+
+	// Find repository with spinner
+	spinner := display.NewSimpleSpinner("Finding repository...")
+	spinner.Start()
 
 	repoURL, err := getProjectRepoURL(login, projectName)
 	if err != nil {
+		spinner.StopWithError("Failed to find repository")
 		return fmt.Errorf("failed to find repository: %v", err)
 	}
 
 	if repoURL == "" {
+		spinner.StopWithError("Repository not found")
 		return fmt.Errorf("no repository found for project '%s'. Make sure you have access to this project", projectName)
 	}
+	spinner.StopWithSuccess(fmt.Sprintf("Found: %s", repoURL))
 
-	fmt.Printf("Found: %s\n", repoURL)
-	fmt.Printf("📁 Target directory: %s\n\n", targetDir)
+	fmt.Printf("%sTarget: %s\n\n", display.Indent, targetDir)
 
 	if _, err := os.Stat(targetDir); !os.IsNotExist(err) {
 		return fmt.Errorf("directory '%s' already exists", targetDir)
 	}
 
-	fmt.Print("🚀 Cloning...\n")
+	// Clone with spinner
+	cloneSpinner := display.NewSimpleSpinner("Cloning repository...")
+	cloneSpinner.Start()
 
 	cmd := exec.Command("git", "clone", repoURL, targetDir)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	cmd.Stdout = nil
+	cmd.Stderr = nil
 
 	if err := cmd.Run(); err != nil {
+		cloneSpinner.StopWithError("Clone failed")
 		return fmt.Errorf("git clone failed: %v", err)
 	}
 
-	fmt.Printf("\n✅ Successfully cloned %s\n", projectName)
-	fmt.Printf("📂 cd %s && ls -la to get started!\n", filepath.Base(targetDir))
+	cloneSpinner.StopWithSuccess(fmt.Sprintf("Successfully cloned %s", projectName))
+	fmt.Printf("\n%sRun: cd %s && ls -la\n", display.Indent, filepath.Base(targetDir))
 
 	return nil
 }

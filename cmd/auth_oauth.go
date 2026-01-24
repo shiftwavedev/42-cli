@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/shiftwavedev/42-cli/internal/api"
+	"github.com/shiftwavedev/42-cli/pkg/display"
 )
 
 var oauthState string
@@ -86,6 +87,10 @@ func exchangeCodeForToken(code, clientID, clientSecret, redirectURI string) (*ap
 func performOAuthLogin(clientID, clientSecret string) error {
 	redirectURI := "http://localhost:8080/callback"
 
+	fmt.Println(display.Header("OAuth Authentication", ""))
+	fmt.Println()
+
+	// Step 1: Generate state
 	state, err := generateSecureState()
 	if err != nil {
 		return fmt.Errorf("failed to generate state parameter: %w", err)
@@ -97,34 +102,51 @@ func performOAuthLogin(clientID, clientSecret string) error {
 		url.QueryEscape(redirectURI),
 		url.QueryEscape(state))
 
-	fmt.Println("Opening browser for authentication...")
-	fmt.Printf("If the browser doesn't open automatically, please visit: %s\n", authURL)
+	// Step 2: Open browser
+	fmt.Printf("%s Opening browser...\n", display.Badge("1", display.Primary))
+	fmt.Printf("%sIf the browser doesn't open, visit:\n%s%s\n\n", display.Indent, display.Indent, authURL)
 
 	err = openBrowser(authURL)
 	if err != nil {
-		fmt.Printf("Failed to open browser automatically: %v\n", err)
-		fmt.Printf("Please manually visit: %s\n", authURL)
+		fmt.Printf("%sFailed to open browser automatically\n", display.Indent)
 	}
 
-	fmt.Println("Waiting for authentication callback...")
+	// Step 3: Wait for callback
+	fmt.Printf("%s Waiting for authorization...\n", display.Badge("2", display.Primary))
+	spinner := display.NewSimpleSpinner("Listening for callback on localhost:8080...")
+	spinner.Start()
+
 	callback, err := startCallbackServer()
 	if err != nil {
+		spinner.StopWithError("Callback server error")
 		return fmt.Errorf("callback server error: %v", err)
 	}
 
 	if callback.Error != "" {
+		spinner.StopWithError("Authorization denied")
 		return fmt.Errorf("authentication error: %s", callback.Error)
 	}
+	spinner.StopWithSuccess("Authorization received")
 
-	fmt.Println("Exchanging authorization code for access token...")
+	// Step 4: Exchange token
+	fmt.Printf("%s Exchanging tokens...\n", display.Badge("3", display.Primary))
+	exchangeSpinner := display.NewSimpleSpinner("Exchanging authorization code...")
+	exchangeSpinner.Start()
+
 	tokenResp, err := exchangeCodeForToken(callback.Code, clientID, clientSecret, redirectURI)
 	if err != nil {
+		exchangeSpinner.StopWithError("Token exchange failed")
 		return fmt.Errorf("token exchange error: %v", err)
 	}
+	exchangeSpinner.StopWithSuccess("Tokens received")
 
+	// Step 5: Store tokens
+	fmt.Printf("%s Storing credentials...\n", display.Badge("4", display.Primary))
 	if err := StoreOAuthToken(tokenResp); err != nil {
 		return fmt.Errorf("failed to store OAuth token: %v", err)
 	}
+
+	fmt.Printf("\n%s Authentication complete!\n", display.Badge("✓", display.Success))
 
 	return nil
 }

@@ -32,10 +32,16 @@ var userCmd = &cobra.Command{
 			return
 		}
 
+		spinner := display.NewSimpleSpinner(fmt.Sprintf("Fetching %s's profile...", login))
+		spinner.Start()
+
 		user, err := getUserProfile(login)
 		if err != nil {
+			spinner.StopWithError("Failed to fetch profile")
 			log.Fatal("Error fetching user profile:", err)
 		}
+		spinner.Stop()
+
 		displayUserProfile(user)
 	},
 }
@@ -51,10 +57,16 @@ var locationCmd = &cobra.Command{
 			log.Fatal("Error:", err)
 		}
 
+		spinner := display.NewSimpleSpinner(fmt.Sprintf("Fetching %s's location...", login))
+		spinner.Start()
+
 		locations, err := getLocationInfo(login)
 		if err != nil {
+			spinner.StopWithError("Failed to fetch location")
 			log.Fatal("Error fetching location information:", err)
 		}
+		spinner.Stop()
+
 		displayLocationInfo(login, locations)
 	},
 }
@@ -75,49 +87,46 @@ func getUserProfile(login string) (*UserProfile, error) {
 }
 
 func displayUserProfile(user *UserProfile) {
-	fmt.Printf("=== Profile: %s ===\n", user.Login)
-	fmt.Printf("Name: %s %s\n", user.FirstName, user.LastName)
-	fmt.Printf("Display Name: %s\n", user.DisplayName)
-	fmt.Printf("Email: %s\n", user.Email)
-
-	if user.Phone != "" {
-		fmt.Printf("Phone: %s\n", user.Phone)
+	// Convert to display types
+	profile := &display.UserProfile{
+		Login:           user.Login,
+		FirstName:       user.FirstName,
+		LastName:        user.LastName,
+		Email:           user.Email,
+		Phone:           user.Phone,
+		DisplayName:     user.DisplayName,
+		Staff:           user.Staff,
+		CorrectionPoint: user.CorrectionPoint,
+		PoolMonth:       user.PoolMonth,
+		PoolYear:        user.PoolYear,
+		Location:        user.Location,
+		Wallet:          user.Wallet,
+		CreatedAt:       user.CreatedAt,
+		UpdatedAt:       user.UpdatedAt,
+		Alumni:          user.Alumni,
+		Active:          user.Active,
 	}
 
-	fmt.Printf("Staff: %t\n", user.Staff)
-	fmt.Printf("Alumni: %t\n", user.Alumni)
-	fmt.Printf("Active: %t\n", user.Active)
-	fmt.Printf("Correction Points: %d\n", user.CorrectionPoint)
-	fmt.Printf("Wallet: %d\n", user.Wallet)
-
-	if user.Location != "" {
-		fmt.Printf("Location: %s\n", user.Location)
+	// Convert campus
+	for _, c := range user.Campus {
+		profile.Campus = append(profile.Campus, display.CampusInfo{
+			Name:    c.Name,
+			Country: c.Country,
+		})
 	}
 
-	if user.PoolMonth != "" && user.PoolYear != "" {
-		fmt.Printf("Pool: %s %s\n", user.PoolMonth, user.PoolYear)
+	// Convert cursus
+	for _, c := range user.CursusUsers {
+		profile.CursusUsers = append(profile.CursusUsers, display.CursusUser{
+			Grade: c.Grade,
+			Level: c.Level,
+			Cursus: display.CursusInfo{
+				Name: c.Cursus.Name,
+			},
+		})
 	}
 
-	if len(user.Campus) > 0 {
-		fmt.Printf("\n=== Campus ===\n")
-		for _, campus := range user.Campus {
-			fmt.Printf("- %s (%s)\n", campus.Name, campus.Country)
-		}
-	}
-
-	if len(user.CursusUsers) > 0 {
-		fmt.Printf("\n=== Cursus ===\n")
-		for _, cursus := range user.CursusUsers {
-			fmt.Printf("- %s: Level %.2f", cursus.Cursus.Name, cursus.Level)
-			if cursus.Grade != "" {
-				fmt.Printf(" (Grade: %s)", cursus.Grade)
-			}
-			fmt.Println()
-		}
-	}
-
-	PrintKeyValue("Created", FormatDate(user.CreatedAt))
-	PrintKeyValue("Updated", FormatDate(user.UpdatedAt))
+	fmt.Print(display.RenderUserProfile(profile))
 }
 
 func getLocationInfo(login string) ([]Location, error) {
@@ -136,33 +145,18 @@ func getLocationInfo(login string) ([]Location, error) {
 }
 
 func displayLocationInfo(login string, locations []Location) {
-	active := []Location{}
-
-	fmt.Printf("=== Location Information: %s ===\n\n", login)
-	if len(locations) == 0 {
-		fmt.Println("No location information found.")
-		return
-	}
-
+	// Convert to display types
+	var displayLocs []display.LocationInfo
 	for _, loc := range locations {
-		if loc.EndAt == nil {
-			active = append(active, loc)
-		}
+		displayLocs = append(displayLocs, display.LocationInfo{
+			Host:    loc.Host,
+			BeginAt: loc.BeginAt,
+			EndAt:   loc.EndAt,
+			Primary: loc.Primary,
+		})
 	}
 
-	if len(active) > 0 {
-		fmt.Printf("📍 Current Location\n")
-		fmt.Println("┌──────────────────────────────────────────────────┐")
-		for _, loc := range active {
-			fmt.Printf("│ 🖥️  Host: %-35s │\n", loc.Host)
-			fmt.Printf("│ 🕰️  Since: %-34s │\n", FormatDateTime(loc.BeginAt))
-			fmt.Printf("│ ⏱️  Duration: %-30s │\n", CalculateDuration(loc.BeginAt, nil))
-			fmt.Println("├──────────────────────────────────────────────────┤")
-		}
-		fmt.Println("└──────────────────────────────────────────────────┘")
-	} else {
-		fmt.Println("🚫 Currently offline")
-	}
+	fmt.Print(display.RenderLocationInfo(login, displayLocs))
 }
 
 func init() {

@@ -3,12 +3,13 @@ package cmd
 import (
 	"fmt"
 	"log"
+	"strconv"
 
 	"github.com/spf13/cobra"
 	"github.com/zalando/go-keyring"
 
-	"github.com/shiftwavedev/42-cli/internal/display"
 	"github.com/shiftwavedev/42-cli/pkg/credentials"
+	"github.com/shiftwavedev/42-cli/pkg/display"
 )
 
 const service string = "42-cli"
@@ -18,13 +19,6 @@ var credManager *credentials.Manager
 func init() {
 	storage := credentials.NewKeyringStorage(service)
 	credManager = credentials.NewManager(storage)
-}
-
-func maskToken(token string) string {
-	if len(token) <= 16 {
-		return "****"
-	}
-	return token[:8] + "..." + token[len(token)-8:]
 }
 
 var authCmd = &cobra.Command{
@@ -92,45 +86,46 @@ var tokenCmd = &cobra.Command{
 	Use:   "token",
 	Short: "Display stored authentication credentials and current access tokens",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("=== Stored Authentication Credentials ===")
-		ids := [3]string{"login42", "client_uid", "client_secret"}
-		for index := range 3 {
-			data, err := keyring.Get(service, ids[index])
-			if err != nil {
-				fmt.Printf("%v: <not found>\n", ids[index])
-				continue
-			}
-			if ids[index] == "client_secret" {
-				fmt.Printf("%v: %v\n", ids[index], maskToken(data))
-			} else {
-				fmt.Printf("%v: %v\n", ids[index], data)
+		// Gather credentials
+		var creds *display.CredentialInfo
+		login, loginErr := keyring.Get(service, "login42")
+		clientID, clientErr := keyring.Get(service, "client_uid")
+		clientSecret, secretErr := keyring.Get(service, "client_secret")
+
+		if loginErr == nil || clientErr == nil || secretErr == nil {
+			creds = &display.CredentialInfo{
+				Login:        login,
+				ClientID:     clientID,
+				ClientSecret: clientSecret,
 			}
 		}
 
-		fmt.Println("\n=== Application Token (Client Credentials) ===")
+		// Gather app token info
+		var appTokenInfo *display.TokenInfo
 		appToken, err := GetApplicationToken()
-		if err != nil {
-			fmt.Printf("Error getting application token: %v\n", err)
-		} else {
-			fmt.Printf("access_token: %s\n", maskToken(appToken))
+		if err == nil {
 			expiryStr, _ := keyring.Get(service, "token_expiry")
-			display.TokenExpiryInfo(expiryStr)
-		}
-
-		fmt.Println("\n=== User Token (OAuth) ===")
-		userToken, err := GetUserToken()
-		if err != nil {
-			fmt.Printf("No user token available: %v\n", err)
-			fmt.Println("Run '42-cli auth login' to authenticate with OAuth")
-		} else {
-			fmt.Printf("access_token: %s\n", maskToken(userToken))
-			expiryStr, _ := keyring.Get(service, "user_token_expiry")
-			display.TokenExpiryInfo(expiryStr)
-
-			refreshToken, err := keyring.Get(service, "user_refresh_token")
-			if err == nil && refreshToken != "" {
-				fmt.Printf("refresh_token: %s\n", maskToken(refreshToken))
+			expiry, _ := strconv.ParseInt(expiryStr, 10, 64)
+			appTokenInfo = &display.TokenInfo{
+				Token:      appToken,
+				ExpiryUnix: expiry,
 			}
 		}
+
+		// Gather user token info
+		var userTokenInfo *display.TokenInfo
+		userToken, err := GetUserToken()
+		if err == nil {
+			expiryStr, _ := keyring.Get(service, "user_token_expiry")
+			expiry, _ := strconv.ParseInt(expiryStr, 10, 64)
+			refreshToken, _ := keyring.Get(service, "user_refresh_token")
+			userTokenInfo = &display.TokenInfo{
+				Token:        userToken,
+				ExpiryUnix:   expiry,
+				RefreshToken: refreshToken,
+			}
+		}
+
+		fmt.Print(display.RenderAuthStatus(creds, appTokenInfo, userTokenInfo))
 	},
 }

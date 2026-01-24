@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/shiftwavedev/42-cli/internal/api"
+	"github.com/shiftwavedev/42-cli/pkg/display"
 )
 
 var correctionsCmd = &cobra.Command{
@@ -19,15 +20,22 @@ var correctionsCmd = &cobra.Command{
 			log.Fatal("Error: You need to login first. Use '42-cli auth login'")
 		}
 
+		spinner := display.NewSimpleSpinner("Fetching corrections...")
+		spinner.Start()
+
 		toCorrect, err := getCorrectionsAsCorrector()
 		if err != nil {
+			spinner.StopWithError("Failed to fetch corrections")
 			log.Fatal("Error fetching corrections to give:", err)
 		}
 
 		toReceive, err := getCorrectionsAsCorrected()
 		if err != nil {
+			spinner.StopWithError("Failed to fetch corrections")
 			log.Fatal("Error fetching corrections to receive:", err)
 		}
+		spinner.Stop()
+
 		displayCorrections(toCorrect, toReceive)
 	},
 }
