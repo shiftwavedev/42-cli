@@ -12,6 +12,7 @@ import (
 
 	"github.com/shiftwavedev/42-cli/internal/api"
 	"github.com/shiftwavedev/42-cli/internal/helpers"
+	"github.com/shiftwavedev/42-cli/pkg/display"
 )
 
 var projectsCmd = &cobra.Command{
@@ -23,6 +24,20 @@ var projectsCmd = &cobra.Command{
 		login, err := helpers.GetLoginOrDefault(args, credManager)
 		if err != nil {
 			log.Fatal("Error:", err)
+		}
+
+		webFlag, _ := cmd.Flags().GetBool("web")
+		if webFlag {
+			currentUserLogin, err := credManager.GetLogin()
+			if err != nil {
+				log.Fatal("Error getting current user login:", err)
+			}
+			url := display.IntraURL{}.Projects(login, currentUserLogin)
+			fmt.Printf("Opening %s in browser...\n", url)
+			if err := display.OpenInBrowser(url); err != nil {
+				log.Fatal("Error opening browser:", err)
+			}
+			return
 		}
 
 		projects, err := getUserProjects(login)
@@ -235,4 +250,6 @@ func getProjectTeams(projectUserID int) ([]Team, error) {
 
 func init() {
 	projectsCmd.AddCommand(cloneCmd)
+
+	projectsCmd.Flags().BoolP("web", "w", false, "Open projects page in browser")
 }

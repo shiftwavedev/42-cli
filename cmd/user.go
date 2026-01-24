@@ -8,6 +8,7 @@ import (
 
 	"github.com/shiftwavedev/42-cli/internal/api"
 	"github.com/shiftwavedev/42-cli/internal/helpers"
+	"github.com/shiftwavedev/42-cli/pkg/display"
 )
 
 var userCmd = &cobra.Command{
@@ -19,6 +20,16 @@ var userCmd = &cobra.Command{
 		login, err := helpers.GetLoginOrDefault(args, credManager)
 		if err != nil {
 			log.Fatal("Error:", err)
+		}
+
+		webFlag, _ := cmd.Flags().GetBool("web")
+		if webFlag {
+			url := display.IntraURL{}.User(login)
+			fmt.Printf("Opening %s in browser...\n", url)
+			if err := display.OpenInBrowser(url); err != nil {
+				log.Fatal("Error opening browser:", err)
+			}
+			return
 		}
 
 		user, err := getUserProfile(login)
@@ -156,4 +167,6 @@ func displayLocationInfo(login string, locations []Location) {
 
 func init() {
 	userCmd.AddCommand(locationCmd)
+
+	userCmd.Flags().BoolP("web", "w", false, "Open user profile in browser")
 }
