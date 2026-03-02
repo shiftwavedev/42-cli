@@ -59,7 +59,7 @@ jobs:
           sha256sum "${OUTPUT}" > "${OUTPUT}.sha256"
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: 42-cli-${{ matrix.goos }}-${{ matrix.goarch }}
           path: |
@@ -68,7 +68,7 @@ jobs:
           retention-days: 1
 
       - name: Upload checksums
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: checksums-${{ matrix.goos }}-${{ matrix.goarch }}
           path: 42-cli-*.sha256
