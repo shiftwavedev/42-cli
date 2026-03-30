@@ -9,6 +9,9 @@
 
 This tool offers an alternative way to interact with 42's systems directly from your terminal.
 
+> [!NOTE]  
+> This project is one of my first in Go. So it’s only natural that it’s not perfect (though no project is perfect). Plus, I’m working on it in my spare time, so progress is a bit slow. 
+
 ## Preview
 
 <img src="./assets/preview.gif" alt="42-cli Demo" height="360px" width="auto" />
