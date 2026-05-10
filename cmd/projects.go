@@ -40,12 +40,11 @@ var projectsCmd = &cobra.Command{
 			return
 		}
 
-		spinner := display.NewSimpleSpinner(fmt.Sprintf("Fetching %s's projects...", login))
-		spinner.Start()
+		spinner := display.NewSpinner(fmt.Sprintf("Fetching %s's projects...", login))
 
 		projects, err := getUserProjects(login)
 		if err != nil {
-			spinner.StopWithError("Failed to fetch projects")
+			spinner.Fail("Failed to fetch projects")
 			log.Fatal("Error fetching user projects:", err)
 		}
 		spinner.Stop()
@@ -128,20 +127,19 @@ func cloneProject(projectName, targetDir string) error {
 	fmt.Println()
 
 	// Find repository with spinner
-	spinner := display.NewSimpleSpinner("Finding repository...")
-	spinner.Start()
+	spinner := display.NewSpinner("Finding repository...")
 
 	repoURL, err := getProjectRepoURL(login, projectName)
 	if err != nil {
-		spinner.StopWithError("Failed to find repository")
+		spinner.Fail("Failed to find repository")
 		return fmt.Errorf("failed to find repository: %v", err)
 	}
 
 	if repoURL == "" {
-		spinner.StopWithError("Repository not found")
+		spinner.Fail("Repository not found")
 		return fmt.Errorf("no repository found for project '%s'. Make sure you have access to this project", projectName)
 	}
-	spinner.StopWithSuccess(fmt.Sprintf("Found: %s", repoURL))
+	spinner.Done(fmt.Sprintf("Found: %s", repoURL))
 
 	fmt.Printf("%sTarget: %s\n\n", display.Indent, targetDir)
 
@@ -150,19 +148,18 @@ func cloneProject(projectName, targetDir string) error {
 	}
 
 	// Clone with spinner
-	cloneSpinner := display.NewSimpleSpinner("Cloning repository...")
-	cloneSpinner.Start()
+	cloneSpinner := display.NewSpinner("Cloning repository...")
 
 	cmd := exec.Command("git", "clone", repoURL, targetDir)
 	cmd.Stdout = nil
 	cmd.Stderr = nil
 
 	if err := cmd.Run(); err != nil {
-		cloneSpinner.StopWithError("Clone failed")
+		cloneSpinner.Fail("Clone failed")
 		return fmt.Errorf("git clone failed: %v", err)
 	}
 
-	cloneSpinner.StopWithSuccess(fmt.Sprintf("Successfully cloned %s", projectName))
+	cloneSpinner.Done(fmt.Sprintf("Successfully cloned %s", projectName))
 	fmt.Printf("\n%sRun: cd %s && ls -la\n", display.Indent, filepath.Base(targetDir))
 
 	return nil

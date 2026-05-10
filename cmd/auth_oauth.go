@@ -113,32 +113,30 @@ func performOAuthLogin(clientID, clientSecret string) error {
 
 	// Step 3: Wait for callback
 	fmt.Printf("%s Waiting for authorization...\n", display.Badge("2", display.Primary))
-	spinner := display.NewSimpleSpinner("Listening for callback on localhost:8080...")
-	spinner.Start()
+	spinner := display.NewSpinner("Listening for callback on localhost:8080...")
 
 	callback, err := startCallbackServer()
 	if err != nil {
-		spinner.StopWithError("Callback server error")
+		spinner.Fail("Callback server error")
 		return fmt.Errorf("callback server error: %v", err)
 	}
 
 	if callback.Error != "" {
-		spinner.StopWithError("Authorization denied")
+		spinner.Fail("Authorization denied")
 		return fmt.Errorf("authentication error: %s", callback.Error)
 	}
-	spinner.StopWithSuccess("Authorization received")
+	spinner.Done("Authorization received")
 
 	// Step 4: Exchange token
 	fmt.Printf("%s Exchanging tokens...\n", display.Badge("3", display.Primary))
-	exchangeSpinner := display.NewSimpleSpinner("Exchanging authorization code...")
-	exchangeSpinner.Start()
+	exchangeSpinner := display.NewSpinner("Exchanging authorization code...")
 
 	tokenResp, err := exchangeCodeForToken(callback.Code, clientID, clientSecret, redirectURI)
 	if err != nil {
-		exchangeSpinner.StopWithError("Token exchange failed")
+		exchangeSpinner.Fail("Token exchange failed")
 		return fmt.Errorf("token exchange error: %v", err)
 	}
-	exchangeSpinner.StopWithSuccess("Tokens received")
+	exchangeSpinner.Done("Tokens received")
 
 	// Step 5: Store tokens
 	fmt.Printf("%s Storing credentials...\n", display.Badge("4", display.Primary))

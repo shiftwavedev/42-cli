@@ -185,14 +185,10 @@ func Panel(title, body string) string {
 		Render(titleStyle.Render(title) + "\n" + body)
 }
 
-// SectionDivider renders a section header line with title (e.g., "─── Title ───")
+// SectionDivider renders a section header line with title
 func SectionDivider(title string) string {
-	// Unicode divider with title - in NO_COLOR mode, the ─ chars stay but without color codes
-	width := 50 // Default width
-	sideWidth := (width - len(title) - 2) / 2
-	if sideWidth < 1 {
-		sideWidth = 1
-	}
+	width := 50
+	sideWidth := max((width-len(title)-2)/2, 1)
 
 	left := strings.Repeat("─", sideWidth)
 	right := strings.Repeat("─", width-len(title)-2-sideWidth)

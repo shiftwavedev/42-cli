@@ -20,18 +20,17 @@ var correctionsCmd = &cobra.Command{
 			log.Fatal("Error: You need to login first. Use '42-cli auth login'")
 		}
 
-		spinner := display.NewSimpleSpinner("Fetching corrections...")
-		spinner.Start()
+		spinner := display.NewSpinner("Fetching corrections...")
 
 		toCorrect, err := getCorrectionsAsCorrector()
 		if err != nil {
-			spinner.StopWithError("Failed to fetch corrections")
+			spinner.Fail("Failed to fetch corrections")
 			log.Fatal("Error fetching corrections to give:", err)
 		}
 
 		toReceive, err := getCorrectionsAsCorrected()
 		if err != nil {
-			spinner.StopWithError("Failed to fetch corrections")
+			spinner.Fail("Failed to fetch corrections")
 			log.Fatal("Error fetching corrections to receive:", err)
 		}
 		spinner.Stop()

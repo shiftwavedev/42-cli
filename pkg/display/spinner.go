@@ -2,6 +2,7 @@ package display
 
 import (
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/charmbracelet/bubbles/spinner"
@@ -16,13 +17,11 @@ type SpinnerModel struct {
 	done    bool
 }
 
-// NewSpinner creates a new spinner with a message
-func NewSpinner(message string) SpinnerModel {
+// NewSpinnerModel creates a new spinner model with a message
+func NewSpinnerModel(message string) SpinnerModel {
 	s := spinner.New()
 	s.Spinner = spinner.Dot
-	if !NoColor {
-		s.Style = lipgloss.NewStyle().Foreground(Primary)
-	}
+	s.Style = lipgloss.NewStyle().Foreground(Primary)
 	return SpinnerModel{
 		spinner: s,
 		message: message,
@@ -63,20 +62,25 @@ func (m SpinnerModel) View() string {
 // spinnerDoneMsg signals the spinner to stop
 type spinnerDoneMsg struct{}
 
-// Spinner provides a simple API for showing loading spinners
+// Spinner provides a unified API for showing loading spinners
+// Works in both COLOR and NO_COLOR modes, renders to stderr to not pollute stdout
 type Spinner struct {
-	program *tea.Program
-	done    chan struct{}
+	program   *tea.Program
+	done      chan struct{}
+	frames    []string // Braille frames for spinner animation
+	lastFrame int
 }
 
-// StartSpinner starts a spinner with a message and returns a Spinner that can be stopped
-func StartSpinner(message string) *Spinner {
-	model := NewSpinner(message)
-	p := tea.NewProgram(model, tea.WithOutput(nil))
+// NewSpinner creates a new unified spinner that works in all modes
+func NewSpinner(message string) *Spinner {
+	model := NewSpinnerModel(message)
+	// Render to stderr so stdout is clean for piping (important for --json)
+	p := tea.NewProgram(model, tea.WithOutput(os.Stderr))
 
 	s := &Spinner{
 		program: p,
 		done:    make(chan struct{}),
+		frames:  []string{"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"},
 	}
 
 	go func() {
@@ -90,103 +94,57 @@ func StartSpinner(message string) *Spinner {
 	return s
 }
 
-// Stop stops the spinner
+// Start begins the spinner animation (kept for backward compatibility with goroutine version)
+// This is handled internally by NewSpinner now
+func (s *Spinner) Start() {
+	// Already started in NewSpinner
+}
+
 func (s *Spinner) Stop() {
 	if s.program != nil {
 		s.program.Send(spinnerDoneMsg{})
 		<-s.done
+		fmt.Fprint(os.Stderr, "\r\033[K")
 	}
+}
+
+// Done stops the spinner with a success message
+// Outputs: ✓ message (with color in COLOR mode, without in NO_COLOR)
+func (s *Spinner) Done(message string) {
+	s.Stop()
+	fmt.Printf("%s %s\n", Icon("success"), message)
+}
+
+// Fail stops the spinner with an error message
+// Outputs: ✗ message (with color in COLOR mode, without in NO_COLOR)
+func (s *Spinner) Fail(message string) {
+	s.Stop()
+	fmt.Printf("%s %s\n", Icon("error"), message)
 }
 
 // WithSpinner executes a function while showing a spinner
 // Returns the result of the function
 func WithSpinner[T any](message string, fn func() (T, error)) (T, error) {
-	s := StartSpinner(message)
+	s := NewSpinner(message)
 	defer s.Stop()
 
 	result, err := fn()
 
 	// Clear the spinner line
-	fmt.Print("\r\033[K")
+	fmt.Fprint(os.Stderr, "\r\033[K")
 
 	return result, err
 }
 
 // WithSpinnerNoResult executes a function while showing a spinner (no return value)
 func WithSpinnerNoResult(message string, fn func() error) error {
-	s := StartSpinner(message)
+	s := NewSpinner(message)
 	defer s.Stop()
 
 	err := fn()
 
 	// Clear the spinner line
-	fmt.Print("\r\033[K")
+	fmt.Fprint(os.Stderr, "\r\033[K")
 
 	return err
-}
-
-// SimpleSpinner provides a non-bubbletea spinner for simpler use cases
-type SimpleSpinner struct {
-	message string
-	done    chan struct{}
-	frames  []string
-}
-
-// NewSimpleSpinner creates a basic spinner without bubbletea
-func NewSimpleSpinner(message string) *SimpleSpinner {
-	return &SimpleSpinner{
-		message: message,
-		done:    make(chan struct{}),
-		frames:  []string{"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"},
-	}
-}
-
-// Start begins the spinner animation
-func (s *SimpleSpinner) Start() {
-	go func() {
-		i := 0
-		for {
-			select {
-			case <-s.done:
-				return
-			default:
-				frame := s.frames[i%len(s.frames)]
-				if NoColor {
-					fmt.Printf("\r%s %s", frame, s.message)
-				} else {
-					styledFrame := lipgloss.NewStyle().Foreground(Primary).Render(frame)
-					fmt.Printf("\r%s %s", styledFrame, s.message)
-				}
-				i++
-				time.Sleep(80 * time.Millisecond)
-			}
-		}
-	}()
-}
-
-// Stop stops the spinner and clears the line
-func (s *SimpleSpinner) Stop() {
-	close(s.done)
-	fmt.Print("\r\033[K") // Clear the line
-}
-
-// StopWithMessage stops the spinner and prints a final message
-func (s *SimpleSpinner) StopWithMessage(message string) {
-	close(s.done)
-	fmt.Print("\r\033[K") // Clear the line
-	fmt.Println(message)
-}
-
-// StopWithSuccess stops the spinner with a success message
-func (s *SimpleSpinner) StopWithSuccess(message string) {
-	close(s.done)
-	fmt.Print("\r\033[K")
-	fmt.Println(Badge("✓", Success) + " " + message)
-}
-
-// StopWithError stops the spinner with an error message
-func (s *SimpleSpinner) StopWithError(message string) {
-	close(s.done)
-	fmt.Print("\r\033[K")
-	fmt.Println(Badge("✗", Error) + " " + message)
 }

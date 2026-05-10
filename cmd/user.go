@@ -32,12 +32,11 @@ var userCmd = &cobra.Command{
 			return
 		}
 
-		spinner := display.NewSimpleSpinner(fmt.Sprintf("Fetching %s's profile...", login))
-		spinner.Start()
+		spinner := display.NewSpinner(fmt.Sprintf("Fetching %s's profile...", login))
 
 		user, err := getUserProfile(login)
 		if err != nil {
-			spinner.StopWithError("Failed to fetch profile")
+			spinner.Fail("Failed to fetch profile")
 			log.Fatal("Error fetching user profile:", err)
 		}
 		spinner.Stop()
@@ -57,12 +56,11 @@ var locationCmd = &cobra.Command{
 			log.Fatal("Error:", err)
 		}
 
-		spinner := display.NewSimpleSpinner(fmt.Sprintf("Fetching %s's location...", login))
-		spinner.Start()
+		spinner := display.NewSpinner(fmt.Sprintf("Fetching %s's location...", login))
 
 		locations, err := getLocationInfo(login)
 		if err != nil {
-			spinner.StopWithError("Failed to fetch location")
+			spinner.Fail("Failed to fetch location")
 			log.Fatal("Error fetching location information:", err)
 		}
 		spinner.Stop()
