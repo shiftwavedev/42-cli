@@ -2,6 +2,7 @@ package display
 
 import (
 	"os"
+	"strings"
 
 	"github.com/charmbracelet/lipgloss"
 )
@@ -16,16 +17,16 @@ func init() {
 	}
 }
 
-// Color palette - minimalist & accessible (GitHub CLI inspired)
+// Color palette - adaptive for light and dark terminal backgrounds
 var (
-	// Primary colors - subtle, professional
-	Primary   = lipgloss.Color("39")  // Soft blue (similar to gh)
-	Secondary = lipgloss.Color("246") // Cool gray
-	Success   = lipgloss.Color("2")   // Green (finished, valid)
-	Warning   = lipgloss.Color("3")   // Yellow (expiring, pending)
-	Error     = lipgloss.Color("1")   // Red (failed, expired)
-	Muted     = lipgloss.Color("240") // Dim gray (metadata)
-	Text      = lipgloss.Color("252") // Light gray (primary text)
+	// Primary colors - adaptive for Light/Dark terminals
+	Primary   = lipgloss.AdaptiveColor{Light: "27", Dark: "39"}   // Bright blue on light, soft blue on dark
+	Secondary = lipgloss.AdaptiveColor{Light: "243", Dark: "246"} // Dark gray on light, light gray on dark
+	Success   = lipgloss.AdaptiveColor{Light: "28", Dark: "2"}    // Dark green on light, bright green on dark
+	Warning   = lipgloss.AdaptiveColor{Light: "130", Dark: "3"}   // Brown/orange on light, bright yellow on dark
+	Error     = lipgloss.AdaptiveColor{Light: "160", Dark: "1"}   // Dark red on light, bright red on dark
+	Muted     = lipgloss.AdaptiveColor{Light: "245", Dark: "240"} // Mid-gray for both
+	Text      = lipgloss.AdaptiveColor{Light: "235", Dark: "252"} // Near-black on light, near-white on dark
 )
 
 // Typography styles - clean, readable
@@ -56,16 +57,16 @@ var (
 
 	// ErrorText - Error messages
 	ErrorText = lipgloss.NewStyle().
-		Foreground(Error).
-		Bold(true)
+			Foreground(Error).
+			Bold(true)
 
 	// SuccessText - Success messages
 	SuccessText = lipgloss.NewStyle().
-		Foreground(Success)
+			Foreground(Success)
 
 	// WarningText - Warning messages
 	WarningText = lipgloss.NewStyle().
-		Foreground(Warning)
+			Foreground(Warning)
 )
 
 // Layout elements
@@ -77,58 +78,141 @@ var (
 	Indent = "  "
 )
 
-// ListPrefix returns the list bullet character, styled if colors are enabled
-func ListPrefix() string {
-	if NoColor {
-		return "•"
+// Icon returns a semantic icon symbol (✓, ✗, ⚠, ●, ○, ⚙)
+// In NO_COLOR mode, lipgloss automatically strips the color codes
+func Icon(state string) string {
+	state = strings.ToLower(state)
+
+	icons := map[string]struct {
+		symbol string
+		color  lipgloss.TerminalColor
+	}{
+		"success":     {symbol: "✓", color: Success},
+		"error":       {symbol: "✗", color: Error},
+		"warning":     {symbol: "⚠", color: Warning},
+		"online":      {symbol: "●", color: Success},
+		"offline":     {symbol: "○", color: Muted},
+		"in_progress": {symbol: "⚙", color: Primary},
 	}
+
+	ic, exists := icons[state]
+	if !exists {
+		// Fallback for unknown states
+		return state
+	}
+
+	// Render symbol with color - in NO_COLOR mode, lipgloss will strip the ANSI codes
+	return lipgloss.NewStyle().Foreground(ic.color).Render(ic.symbol)
+}
+
+// ListPrefix returns the list bullet character, styled
+func ListPrefix() string {
 	return lipgloss.NewStyle().
 		Foreground(Primary).
 		Render("•")
 }
 
-// Badge renders a colored badge/tag
-func Badge(text string, color lipgloss.Color) string {
-	if NoColor {
-		return text
-	}
+// Badge renders a colored badge/pill with text
+// TerminalColor interface accepts both Color and AdaptiveColor
+func Badge(text string, color lipgloss.TerminalColor) string {
 	return lipgloss.NewStyle().
-		Foreground(color).
+		Background(color).
+		Foreground(Text).
 		Bold(true).
+		Padding(0, 1).
 		Render(text)
 }
 
-// StatusBadge renders a status indicator with appropriate color
+// StatusBadge renders a status indicator with appropriate color and icon
 func StatusBadge(status string) string {
-	switch status {
-	case "finished", "completed", "valid", "active":
-		return Badge(status, Success)
-	case "in_progress", "pending", "expiring":
-		return Badge(status, Warning)
-	case "failed", "expired", "error":
-		return Badge(status, Error)
-	default:
+	status = strings.ToLower(status)
+
+	statusMap := map[string]struct {
+		icon  string
+		label string
+	}{
+		"finished":               {icon: "success", label: "Finished"},
+		"completed":              {icon: "success", label: "Completed"},
+		"valid":                  {icon: "success", label: "Valid"},
+		"active":                 {icon: "online", label: "Active"},
+		"waiting_for_correction": {icon: "warning", label: "Waiting"},
+		"in_progress":            {icon: "in_progress", label: "In Progress"},
+		"failed":                 {icon: "error", label: "Failed"},
+		"expired":                {icon: "error", label: "Expired"},
+		"error":                  {icon: "error", label: "Error"},
+	}
+
+	sm, exists := statusMap[status]
+	if !exists {
 		return Badge(status, Secondary)
 	}
+
+	icon := Icon(sm.icon)
+	label := sm.label
+
+	// Render icon + styled label - in NO_COLOR mode, lipgloss strips ANSI
+	var labelStyle lipgloss.Style
+	switch sm.icon {
+	case "success":
+		labelStyle = lipgloss.NewStyle().Foreground(Success)
+	case "error":
+		labelStyle = lipgloss.NewStyle().Foreground(Error)
+	case "warning":
+		labelStyle = lipgloss.NewStyle().Foreground(Warning)
+	case "online":
+		labelStyle = lipgloss.NewStyle().Foreground(Success)
+	case "in_progress":
+		labelStyle = lipgloss.NewStyle().Foreground(Primary)
+	default:
+		labelStyle = lipgloss.NewStyle().Foreground(Secondary)
+	}
+
+	return icon + " " + labelStyle.Render(label)
 }
 
-// Divider returns a horizontal divider line
-func Divider(width int) string {
-	if NoColor {
-		return repeat(DividerChar, width)
+// Panel renders a rounded border panel with title and body
+func Panel(title, body string) string {
+	// COLOR mode: lipgloss rounded border
+	// In NO_COLOR mode, lipgloss strips ANSI but keeps Unicode box-drawing chars
+	titleStyle := lipgloss.NewStyle().
+		Foreground(Primary).
+		Bold(true)
+
+	return lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(Muted).
+		Padding(1, 2).
+		Render(titleStyle.Render(title) + "\n" + body)
+}
+
+// SectionDivider renders a section header line with title (e.g., "─── Title ───")
+func SectionDivider(title string) string {
+	// Unicode divider with title - in NO_COLOR mode, the ─ chars stay but without color codes
+	width := 50 // Default width
+	sideWidth := (width - len(title) - 2) / 2
+	if sideWidth < 1 {
+		sideWidth = 1
 	}
+
+	left := strings.Repeat("─", sideWidth)
+	right := strings.Repeat("─", width-len(title)-2-sideWidth)
+
 	return lipgloss.NewStyle().
 		Foreground(Muted).
-		Render(repeat(DividerChar, width))
+		Render(left + " " + title + " " + right)
 }
 
-// repeat returns a string repeated n times
-func repeat(s string, n int) string {
-	result := ""
-	for i := 0; i < n; i++ {
-		result += s
+// Divider returns a horizontal divider line with adaptive width
+func Divider(width int) string {
+	if width <= 0 {
+		width = 65 // Default fallback
 	}
-	return result
+
+	dividerLine := strings.Repeat(DividerChar, width)
+
+	return lipgloss.NewStyle().
+		Foreground(Muted).
+		Render(dividerLine)
 }
 
 // RenderIf returns styled text if colors are enabled, otherwise plain text
@@ -148,7 +232,7 @@ func Header(title string, subtitle string) string {
 	return result
 }
 
-// SectionHeader renders a secondary section header
+// SectionHeader renders a secondary section header (deprecated: use SectionDivider instead)
 func SectionHeader(title string) string {
 	return RenderIf(H2, title)
 }
