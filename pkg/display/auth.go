@@ -31,79 +31,96 @@ func RenderAuthStatus(creds *CredentialInfo, appToken, userToken *TokenInfo) str
 
 	// Credentials section
 	if creds != nil {
-		b.WriteString(SectionHeader("CREDENTIALS"))
-		b.WriteString("\n")
-		b.WriteString(KeyValue("Login", creds.Login, 12))
-		b.WriteString("\n")
-		b.WriteString(KeyValue("Client ID", creds.ClientID, 12))
-		b.WriteString("\n")
-		b.WriteString(KeyValue("Secret", MaskToken(creds.ClientSecret), 12))
-		b.WriteString("\n")
+		credentialsBody := fmt.Sprintf(
+			"%s  %s\n%s  %s\n%s  %s",
+			RenderIf(Subtle, "Login"),
+			creds.Login,
+			RenderIf(Subtle, "Client ID"),
+			creds.ClientID,
+			RenderIf(Subtle, "Secret"),
+			MaskToken(creds.ClientSecret),
+		)
+		b.WriteString(Panel("Credentials", credentialsBody))
+		b.WriteString("\n\n")
+	} else {
+		noCredsBody := "No credentials found.\n" +
+			"Run '42-cli auth login' to get started."
+		b.WriteString(Panel("Credentials", noCredsBody))
+		b.WriteString("\n\n")
 	}
 
 	// User token section
 	if userToken != nil {
-		b.WriteString("\n")
-		b.WriteString(SectionHeader("USER TOKEN"))
-		b.WriteString("\n")
-		b.WriteString(renderTokenSection(userToken, true))
+		userTokenBody := renderTokenSectionBody(userToken, true)
+		b.WriteString(Panel("User Token", userTokenBody))
 	} else {
-		b.WriteString("\n")
-		b.WriteString(SectionHeader("USER TOKEN"))
-		b.WriteString("\n")
-		b.WriteString(KeyValue("Status", Badge("Not authenticated", Muted), 12))
-		b.WriteString("\n")
-		b.WriteString(Indent + RenderIf(Subtle, "Run '42-cli auth login' to authenticate"))
-		b.WriteString("\n")
+		noAuthBody := fmt.Sprintf("%s Not authenticated\nRun '42-cli auth login' to authenticate",
+			Icon("offline"))
+		b.WriteString(Panel("User Token", noAuthBody))
 	}
 
 	// App token section
 	if appToken != nil {
-		b.WriteString("\n")
-		b.WriteString(SectionHeader("APP TOKEN"))
-		b.WriteString("\n")
-		b.WriteString(renderTokenSection(appToken, false))
+		b.WriteString("\n\n")
+		appTokenBody := renderTokenSectionBody(appToken, false)
+		b.WriteString(Panel("App Token", appTokenBody))
 	}
 
 	// Footer hint
-	b.WriteString("\n")
-	b.WriteString(Indent + RenderIf(Subtle, "Use '42-cli auth refresh' to renew tokens"))
+	b.WriteString("\n\n")
+	b.WriteString(Indent + RenderIf(Subtle, "Run '42-cli auth refresh' to renew tokens"))
 	b.WriteString("\n")
 
 	return b.String()
 }
 
-func renderTokenSection(token *TokenInfo, includeRefresh bool) string {
+// renderTokenSectionBody builds the body content for a token panel
+func renderTokenSectionBody(token *TokenInfo, includeRefresh bool) string {
 	var b strings.Builder
 
 	// Status with expiry info
 	status := getTokenStatus(token.ExpiryUnix)
-	b.WriteString(KeyValue("Status", status.badge+" "+status.detail, 12))
-	b.WriteString("\n")
+	statusLine := fmt.Sprintf("%s  %s\n",
+		RenderIf(Subtle, "Status"),
+		status.full,
+	)
+	b.WriteString(statusLine)
 
 	// Token (masked)
-	b.WriteString(KeyValue("Token", RenderIf(Code, MaskToken(token.Token)), 12))
-	b.WriteString("\n")
+	tokenLine := fmt.Sprintf("%s  %s\n",
+		RenderIf(Subtle, "Token"),
+		RenderIf(Code, MaskToken(token.Token)),
+	)
+	b.WriteString(tokenLine)
 
 	// Refresh token (if applicable)
 	if includeRefresh && token.RefreshToken != "" {
-		b.WriteString(KeyValue("Refresh", RenderIf(Code, MaskToken(token.RefreshToken)), 12))
-		b.WriteString("\n")
+		refreshLine := fmt.Sprintf("%s  %s",
+			RenderIf(Subtle, "Refresh"),
+			RenderIf(Code, MaskToken(token.RefreshToken)),
+		)
+		b.WriteString(refreshLine)
 	}
 
 	return b.String()
 }
 
+// tokenStatus holds the rendered status representation
 type tokenStatus struct {
-	badge  string
-	detail string
+	icon   string // The icon to display
+	label  string // The status label
+	detail string // Additional detail (e.g., time info)
+	full   string // Combined: icon label detail
 }
 
+// getTokenStatus returns the token status with proper icons and labels
 func getTokenStatus(expiryUnix int64) tokenStatus {
 	if expiryUnix == 0 {
 		return tokenStatus{
-			badge:  Badge("Unknown", Muted),
+			icon:   Icon("offline"),
+			label:  "Unknown",
 			detail: "",
+			full:   Icon("offline") + " Unknown",
 		}
 	}
 
@@ -111,37 +128,39 @@ func getTokenStatus(expiryUnix int64) tokenStatus {
 	remaining := time.Until(expiryTime)
 
 	if remaining < 0 {
+		// Expired
+		relTime := RelativeTimeFromTime(expiryTime)
 		return tokenStatus{
-			badge:  Badge("Expired", Error),
-			detail: RenderIf(Subtle, fmt.Sprintf("(%s)", RelativeTimeFromTime(expiryTime))),
+			icon:   Icon("error"),
+			label:  "Expired",
+			detail: fmt.Sprintf("(%s)", relTime),
+			full:   Icon("error") + " Expired " + RenderIf(Subtle, fmt.Sprintf("(%s)", relTime)),
 		}
 	}
 
 	// Less than 1 hour - warning
 	if remaining < time.Hour {
+		duration := FormatDuration(remaining)
 		return tokenStatus{
-			badge:  Badge("Expiring", Warning),
-			detail: RenderIf(Subtle, fmt.Sprintf("(in %s)", FormatDuration(remaining))),
+			icon:   Icon("warning"),
+			label:  "Expiring",
+			detail: fmt.Sprintf("(in %s)", duration),
+			full:   Icon("warning") + " Expiring " + RenderIf(Subtle, fmt.Sprintf("(in %s)", duration)),
 		}
 	}
 
-	// Less than 24 hours - still valid but show time
-	if remaining < 24*time.Hour {
-		return tokenStatus{
-			badge:  Badge("Valid", Success),
-			detail: RenderIf(Subtle, fmt.Sprintf("(expires in %s)", FormatDuration(remaining))),
-		}
-	}
-
-	// More than 24 hours
+	// Valid token
+	duration := FormatDuration(remaining)
 	return tokenStatus{
-		badge:  Badge("Valid", Success),
-		detail: RenderIf(Subtle, fmt.Sprintf("(expires in %s)", FormatDuration(remaining))),
+		icon:   Icon("online"),
+		label:  "Valid",
+		detail: fmt.Sprintf("(expires in %s)", duration),
+		full:   Icon("online") + " Valid " + RenderIf(Subtle, fmt.Sprintf("(expires in %s)", duration)),
 	}
 }
 
 // RenderTokenExpiry renders token expiry information (simple version for existing code)
 func RenderTokenExpiry(expiryUnix int64) string {
 	status := getTokenStatus(expiryUnix)
-	return status.badge + " " + status.detail
+	return status.full
 }
