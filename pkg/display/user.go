@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 	"time"
+
+	"github.com/charmbracelet/bubbles/progress"
 )
 
 // UserProfile represents a 42 user profile for rendering
@@ -60,23 +62,29 @@ func RenderUserProfile(user *UserProfile) string {
 	b.WriteString(Divider(65))
 	b.WriteString("\n\n")
 
-	// Status line with inline badges
+	// Status line with semantic indicators and badges
 	status := []string{}
+
+	// Active/Inactive status with icon
 	if user.Active {
-		status = append(status, Badge("Active", Success))
+		status = append(status, Icon("online")+" Active")
 	} else {
-		status = append(status, Badge("Inactive", Muted))
+		status = append(status, Icon("offline")+" Offline")
 	}
+
+	// Staff/Alumni pills
 	if user.Staff {
 		status = append(status, Badge("Staff", Primary))
 	}
 	if user.Alumni {
 		status = append(status, Badge("Alumni", Secondary))
 	}
-	status = append(status, fmt.Sprintf("%d correction points", user.CorrectionPoint))
-	status = append(status, fmt.Sprintf("%d wallet", user.Wallet))
 
-	b.WriteString(Indent + strings.Join(status, " · ") + "\n\n")
+	// Correction points and wallet
+	status = append(status, fmt.Sprintf("%d correction pts", user.CorrectionPoint))
+	status = append(status, fmt.Sprintf("%d₳", user.Wallet))
+
+	b.WriteString(Indent + strings.Join(status, "   ") + "\n\n")
 
 	// Location (if present)
 	if user.Location != "" {
@@ -92,7 +100,7 @@ func RenderUserProfile(user *UserProfile) string {
 	// Campus list
 	if len(user.Campus) > 0 {
 		b.WriteString("\n")
-		b.WriteString(SectionHeader("CAMPUS"))
+		b.WriteString(SectionDivider("Campus"))
 		b.WriteString("\n")
 		for _, campus := range user.Campus {
 			b.WriteString(ListItem(fmt.Sprintf("%s, %s", campus.Name, campus.Country)))
@@ -100,20 +108,32 @@ func RenderUserProfile(user *UserProfile) string {
 		}
 	}
 
-	// Cursus list with aligned levels
+	// Cursus list with progress bars
 	if len(user.CursusUsers) > 0 {
 		if len(user.Campus) == 0 {
 			b.WriteString("\n")
 		}
-		b.WriteString(SectionHeader("CURSUS"))
+		b.WriteString(SectionDivider("Cursus"))
 		b.WriteString("\n")
 		for _, cursus := range user.CursusUsers {
+			// Cursus name and level indicator (with grade if present)
 			name := PadRight(cursus.Cursus.Name, 20)
-			level := fmt.Sprintf("Level %s", FormatLevel(cursus.Level))
+			levelStr := FormatLevel(cursus.Level)
 			if cursus.Grade != "" {
-				level += RenderIf(Subtle, fmt.Sprintf(" (%s)", cursus.Grade))
+				levelStr += RenderIf(Subtle, fmt.Sprintf(" (%s)", cursus.Grade))
 			}
-			b.WriteString(ListItem(fmt.Sprintf("%s %s", name, level)))
+			b.WriteString(name + "  " + levelStr + "\n")
+
+			// Progress bar (visual in COLOR, plus numeric in both modes)
+			bar := renderProgressBar(cursus.Level, 30)
+			if NoColor {
+				// NO_COLOR: show progress bar (text already included) + percentage for clarity
+				percentage := (cursus.Level / 21.0) * 100.0
+				b.WriteString(fmt.Sprintf("%s%s  (%.1f%%)\n", Indent, bar, percentage))
+			} else {
+				// COLOR mode: just the visual progress bar
+				b.WriteString(Indent + bar + "\n")
+			}
 			b.WriteString("\n")
 		}
 	}
@@ -122,9 +142,45 @@ func RenderUserProfile(user *UserProfile) string {
 	created := RelativeTime(user.CreatedAt)
 	updated := RelativeTime(user.UpdatedAt)
 	footer := fmt.Sprintf("Created %s · Updated %s", created, updated)
-	b.WriteString("\n" + Indent + RenderIf(Subtle, footer) + "\n")
+	b.WriteString(Indent + RenderIf(Subtle, footer) + "\n")
 
 	return b.String()
+}
+
+// renderProgressBar creates a visual progress bar using bubbles/progress
+// In NO_COLOR mode, renders a plain ASCII bar without ANSI codes
+func renderProgressBar(level float64, width int) string {
+	// Level is out of 21
+	percent := level / 21.0
+	if percent > 1.0 {
+		percent = 1.0
+	}
+
+	if NoColor {
+		// NO_COLOR mode: render plain ASCII bar
+		filledWidth := int(float64(width) * percent)
+		emptyWidth := width - filledWidth
+
+		// Use plain ASCII characters for the bar
+		bar := strings.Repeat("#", filledWidth) + strings.Repeat("-", emptyWidth)
+
+		// Add percentage
+		percentStr := fmt.Sprintf("  %d%%  %.2f / 21", int(percent*100), level)
+		return "[" + bar + "]" + percentStr
+	}
+
+	// COLOR mode: Use bubbles progress bar with gradient
+	prog := progress.New(
+		progress.WithScaledGradient("#00d7ff", "#0087ff"),
+		progress.WithWidth(width),
+	)
+
+	// Render the progress bar
+	barStr := prog.ViewAs(percent)
+
+	// Add the level info at the end
+	levelStr := fmt.Sprintf("  %.2f / 21", level)
+	return barStr + levelStr
 }
 
 // LocationInfo represents user location for rendering
@@ -158,19 +214,28 @@ func RenderLocationInfo(login string, locations []LocationInfo) string {
 	}
 
 	if len(active) > 0 {
-		b.WriteString(SectionHeader("CURRENT"))
+		b.WriteString(SectionDivider("Current Session"))
 		b.WriteString("\n")
 		for _, loc := range active {
 			// Parse begin time for duration calculation
 			beginTime, _ := time.Parse(time.RFC3339, loc.BeginAt)
 			duration := FormatDuration(time.Since(beginTime))
 
-			b.WriteString(ListItem(fmt.Sprintf("%s %s", Badge(loc.Host, Success), RenderIf(Subtle, "since "+RelativeTime(loc.BeginAt)))))
-			b.WriteString("\n")
-			b.WriteString(fmt.Sprintf("%s%s%s %s\n", Indent, Indent, RenderIf(Subtle, "Duration:"), duration))
+			// Build location panel body
+			locationBody := fmt.Sprintf(
+				"%s  %s\n%s  %s\n%s  %s",
+				RenderIf(Subtle, "Host"),
+				loc.Host,
+				RenderIf(Subtle, "Since"),
+				RelativeTime(loc.BeginAt),
+				RenderIf(Subtle, "Duration"),
+				duration,
+			)
+			b.WriteString(Panel("Session", locationBody))
 		}
 	} else {
-		b.WriteString(Indent + Badge("Offline", Muted) + "\n")
+		// Offline status
+		b.WriteString(Icon("offline") + " Offline\n")
 	}
 
 	return b.String()
