@@ -3,6 +3,9 @@ package display
 import (
 	"fmt"
 	"strings"
+
+	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/lipgloss/table"
 )
 
 // ProjectInfo represents a project for rendering
@@ -25,7 +28,7 @@ type ProjectSummary struct {
 	Waiting    int
 }
 
-// RenderProjectsList renders a styled projects list
+// RenderProjectsList renders a styled projects list using a table
 func RenderProjectsList(login string, projects []ProjectInfo) string {
 	var b strings.Builder
 
@@ -61,11 +64,10 @@ func RenderProjectsList(login string, projects []ProjectInfo) string {
 
 	// Finished projects
 	if len(finished) > 0 {
-		b.WriteString(SectionHeader(fmt.Sprintf("FINISHED (%d)", len(finished))))
+		b.WriteString(SectionDivider(fmt.Sprintf("FINISHED (%d)", len(finished))))
+		b.WriteString("\n\n")
+		b.WriteString(renderProjectsTable(finished, "finished"))
 		b.WriteString("\n")
-		for _, p := range finished {
-			b.WriteString(renderProjectLine(p, "finished") + "\n")
-		}
 	}
 
 	// In progress projects
@@ -73,11 +75,10 @@ func RenderProjectsList(login string, projects []ProjectInfo) string {
 		if len(finished) > 0 {
 			b.WriteString("\n")
 		}
-		b.WriteString(SectionHeader(fmt.Sprintf("IN PROGRESS (%d)", len(inProgress))))
+		b.WriteString(SectionDivider(fmt.Sprintf("IN PROGRESS (%d)", len(inProgress))))
+		b.WriteString("\n\n")
+		b.WriteString(renderProjectsTable(inProgress, "in_progress"))
 		b.WriteString("\n")
-		for _, p := range inProgress {
-			b.WriteString(renderProjectLine(p, "in_progress") + "\n")
-		}
 	}
 
 	// Failed projects
@@ -85,18 +86,17 @@ func RenderProjectsList(login string, projects []ProjectInfo) string {
 		if len(finished) > 0 || len(inProgress) > 0 {
 			b.WriteString("\n")
 		}
-		b.WriteString(SectionHeader(fmt.Sprintf("FAILED (%d)", len(failed))))
+		b.WriteString(SectionDivider(fmt.Sprintf("FAILED (%d)", len(failed))))
+		b.WriteString("\n\n")
+		b.WriteString(renderProjectsTable(failed, "failed"))
 		b.WriteString("\n")
-		for _, p := range failed {
-			b.WriteString(renderProjectLine(p, "failed") + "\n")
-		}
 	}
 
 	// Summary
 	summary := calculateSummary(finished, inProgress, failed)
 	b.WriteString("\n")
-	b.WriteString(SectionHeader("SUMMARY"))
-	b.WriteString("\n")
+	b.WriteString(SectionDivider("SUMMARY"))
+	b.WriteString("\n\n")
 	summaryLine := fmt.Sprintf("%s %d finished · %s %d in progress · %s %d failed",
 		Badge("✓", Success), summary.Finished,
 		Badge("◦", Warning), summary.InProgress,
@@ -107,24 +107,46 @@ func RenderProjectsList(login string, projects []ProjectInfo) string {
 	return b.String()
 }
 
-func renderProjectLine(p ProjectInfo, category string) string {
-	// Project name (left-aligned, 30 chars)
-	name := PadRight(p.Name, 30)
-	if len(p.Name) > 30 {
-		name = TruncateString(p.Name, 27)
+// renderProjectsTable builds a lipgloss table for a list of projects
+func renderProjectsTable(projects []ProjectInfo, category string) string {
+	t := table.New().
+		Border(lipgloss.RoundedBorder()).
+		BorderStyle(lipgloss.NewStyle().Foreground(Muted)).
+		StyleFunc(func(row, col int) lipgloss.Style {
+			// Header row styling
+			if row == 0 {
+				return lipgloss.NewStyle().
+					Bold(true).
+					Foreground(Primary).
+					Padding(0, 1)
+			}
+			// Regular rows
+			return lipgloss.NewStyle().Padding(0, 1)
+		}).
+		Headers("PROJECT", "STATUS", "SCORE", "NOTES").
+		Rows()
+
+	for _, p := range projects {
+		row := buildProjectRow(p, category)
+		t = t.Row(row...)
 	}
 
-	var statusBadge, score, meta string
+	return Indent + strings.ReplaceAll(t.Render(), "\n", "\n"+Indent)
+}
 
+// buildProjectRow constructs a row ([]string) for a project in the table
+func buildProjectRow(p ProjectInfo, category string) []string {
+	// Column 1: Project name (truncate if too long)
+	name := p.Name
+	if len(name) > 30 {
+		name = TruncateString(name, 27)
+	}
+
+	// Column 2: Status badge
+	var statusBadge string
 	switch category {
 	case "finished":
 		statusBadge = Badge("Finished", Success)
-		if p.FinalMark > 0 {
-			score = Badge(fmt.Sprintf("%d", p.FinalMark), Success)
-		}
-		if p.MarkedAt != "" {
-			meta = RenderIf(Subtle, RelativeTime(p.MarkedAt))
-		}
 
 	case "in_progress":
 		if strings.ToLower(p.Status) == "waiting_for_correction" {
@@ -132,32 +154,58 @@ func renderProjectLine(p ProjectInfo, category string) string {
 		} else {
 			statusBadge = Badge("In Progress", Primary)
 		}
-		if p.TeamCount > 1 {
-			meta = RenderIf(Subtle, fmt.Sprintf("Team: %d members", p.TeamCount))
-		}
 
 	case "failed":
 		statusBadge = Badge("Failed", Error)
+	}
+
+	// Column 3: Score
+	var score string
+	switch category {
+	case "finished":
+		if p.FinalMark > 0 {
+			score = Badge(fmt.Sprintf("%d", p.FinalMark), Success)
+		} else {
+			score = "—"
+		}
+
+	case "in_progress":
+		score = "—"
+
+	case "failed":
 		if p.FinalMark >= 0 {
 			score = Badge(fmt.Sprintf("%d", p.FinalMark), Error)
+		} else {
+			score = "—"
 		}
+	}
+
+	// Column 4: Notes (metadata)
+	var notes string
+	switch category {
+	case "finished":
+		if p.MarkedAt != "" {
+			notes = RenderIf(Subtle, RelativeTime(p.MarkedAt))
+		} else {
+			notes = "—"
+		}
+
+	case "in_progress":
+		if p.TeamCount > 1 {
+			notes = fmt.Sprintf("%d members", p.TeamCount)
+		} else {
+			notes = "—"
+		}
+
+	case "failed":
 		if p.Retriable {
-			meta = Badge("retriable", Warning)
+			notes = Badge("retriable", Warning)
+		} else {
+			notes = "—"
 		}
 	}
 
-	// Build line
-	parts := []string{name, PadRight(statusBadge, 15)}
-	if score != "" {
-		parts = append(parts, PadRight(score, 5))
-	} else {
-		parts = append(parts, PadRight("", 5))
-	}
-	if meta != "" {
-		parts = append(parts, meta)
-	}
-
-	return ListItem(strings.Join(parts, " "))
+	return []string{name, statusBadge, score, notes}
 }
 
 func calculateSummary(finished, inProgress, failed []ProjectInfo) ProjectSummary {
