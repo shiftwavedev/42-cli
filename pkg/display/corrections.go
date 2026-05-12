@@ -24,7 +24,7 @@ func RenderCorrections(toGive, toReceive []CorrectionCard) string {
 	// Header
 	b.WriteString(Header("Corrections & Evaluations", ""))
 	b.WriteString("\n")
-	b.WriteString(Divider(65))
+	b.WriteString(Divider(0))
 	b.WriteString("\n\n")
 
 	// Corrections to give

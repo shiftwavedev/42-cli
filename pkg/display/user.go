@@ -59,7 +59,7 @@ func RenderUserProfile(user *UserProfile) string {
 	}
 	b.WriteString(Header(user.Login, emailDomain))
 	b.WriteString("\n")
-	b.WriteString(Divider(65))
+	b.WriteString(Divider(0))
 	b.WriteString("\n\n")
 
 	// Status line with semantic indicators and badges
@@ -117,7 +117,7 @@ func RenderUserProfile(user *UserProfile) string {
 		b.WriteString("\n")
 		for _, cursus := range user.CursusUsers {
 			// Cursus name and level indicator (with grade if present)
-			name := PadRight(cursus.Cursus.Name, 20)
+			name := PadRight(cursus.Cursus.Name, AutoPadWidth())
 			levelStr := FormatLevel(cursus.Level)
 			if cursus.Grade != "" {
 				levelStr += RenderIf(Subtle, fmt.Sprintf(" (%s)", cursus.Grade))
@@ -197,7 +197,7 @@ func RenderLocationInfo(login string, locations []LocationInfo) string {
 
 	b.WriteString(Header("Location", login))
 	b.WriteString("\n")
-	b.WriteString(Divider(65))
+	b.WriteString(Divider(0))
 	b.WriteString("\n\n")
 
 	if len(locations) == 0 {

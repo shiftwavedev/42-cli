@@ -26,7 +26,7 @@ func RenderAuthStatus(creds *CredentialInfo, appToken, userToken *TokenInfo) str
 
 	b.WriteString(Header("Authentication Status", ""))
 	b.WriteString("\n")
-	b.WriteString(Divider(65))
+	b.WriteString(Divider(0))
 	b.WriteString("\n\n")
 
 	// Credentials section

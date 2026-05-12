@@ -36,7 +36,7 @@ func RenderProjectsList(login string, projects []ProjectInfo) string {
 	subtitle := fmt.Sprintf("%d total", len(projects))
 	b.WriteString(Header(login+"'s projects", subtitle))
 	b.WriteString("\n")
-	b.WriteString(Divider(65))
+	b.WriteString(Divider(0))
 	b.WriteString("\n\n")
 
 	if len(projects) == 0 {
@@ -138,8 +138,9 @@ func renderProjectsTable(projects []ProjectInfo, category string) string {
 func buildProjectRow(p ProjectInfo, category string) []string {
 	// Column 1: Project name (truncate if too long)
 	name := p.Name
-	if len(name) > 30 {
-		name = TruncateString(name, 27)
+	maxLen := CalculateMaxProjectNameLength()
+	if len(name) > maxLen {
+		name = TruncateString(name, maxLen-3)
 	}
 
 	// Column 2: Status badge

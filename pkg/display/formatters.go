@@ -148,7 +148,7 @@ func TruncateString(s string, maxLen int) string {
 		return lipgloss.NewStyle().MaxWidth(maxLen).Render(s)
 	}
 	// Truncate with ellipsis, preserving ANSI codes
-	return lipgloss.NewStyle().MaxWidth(maxLen - 3).Render(s) + "..."
+	return lipgloss.NewStyle().MaxWidth(maxLen-3).Render(s) + "..."
 }
 
 // PadRight pads a string to a minimum width (using visible width, ignoring ANSI codes)
@@ -217,4 +217,43 @@ func CapitalizeFirst(s string) string {
 // FormatLevel formats a float level with 2 decimal places
 func FormatLevel(level float64) string {
 	return fmt.Sprintf("%.2f", level)
+}
+
+// AutoPadWidth returns responsive padding width based on terminal size
+// Use 25% of terminal width, bounded by min/max for readability
+func AutoPadWidth() int {
+	width := GlobalTerminalDimensions.Width / 4
+	if width < 15 {
+		return 15
+	}
+	if width > 30 {
+		return 30
+	}
+	return width
+}
+
+// CalculateMaxProjectNameLength calculates safe truncation point based on terminal size
+// Allocate ~30% of terminal width to project name, bounded for readability
+func CalculateMaxProjectNameLength() int {
+	available := GlobalTerminalDimensions.Width / 3
+	if available < 15 {
+		return 15
+	}
+	if available > 40 {
+		return 40
+	}
+	return available
+}
+
+// WrapTextResponsive wraps text with responsive width
+// reservedWidth is the space needed for other columns/formatting
+func WrapTextResponsive(text string, reservedWidth int) string {
+	maxWidth := GlobalTerminalDimensions.Width - reservedWidth
+	if maxWidth < 20 {
+		maxWidth = 20
+	}
+	if len(text) > maxWidth {
+		return text[:maxWidth-3] + "..."
+	}
+	return text
 }

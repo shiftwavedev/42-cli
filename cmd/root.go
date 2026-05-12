@@ -39,8 +39,8 @@ var rootCmd = &cobra.Command{
 	Short: "42-cli brings 42's intranet to your terminal.",
 	Long:  `42-cli brings 42's intranet to your terminal. This tool is a alternative way of accessing public intranet data.`,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
-		// Initialize display configuration before any command runs
 		display.InitConfig(noColorFlag)
+		display.RefreshTerminalDimensions()
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		cmd.Help()

@@ -18,8 +18,8 @@ func init() {
 }
 
 // Color palette - adaptive for light and dark terminal backgrounds
+// TODO: Change that's not really adaptive :/ I don't found the best colors for light/dark terminals
 var (
-	// Primary colors - adaptive for Light/Dark terminals
 	Primary   = lipgloss.AdaptiveColor{Light: "27", Dark: "39"}   // Bright blue on light, soft blue on dark
 	Secondary = lipgloss.AdaptiveColor{Light: "243", Dark: "246"} // Dark gray on light, light gray on dark
 	Success   = lipgloss.AdaptiveColor{Light: "28", Dark: "2"}    // Dark green on light, bright green on dark
@@ -185,9 +185,27 @@ func Panel(title, body string) string {
 		Render(titleStyle.Render(title) + "\n" + body)
 }
 
+// DividerWidth returns responsive divider width with margins
+func DividerWidth() int {
+	width := GlobalTerminalDimensions.Width
+	if width > 24 {
+		return width - 4
+	}
+	return 20
+}
+
+// SectionDividerWidth returns width for section headers (slightly narrower)
+func SectionDividerWidth() int {
+	width := DividerWidth()
+	if width > 8 {
+		return width - 4
+	}
+	return width
+}
+
 // SectionDivider renders a section header line with title
 func SectionDivider(title string) string {
-	width := 50
+	width := SectionDividerWidth()
 	sideWidth := max((width-len(title)-2)/2, 1)
 
 	left := strings.Repeat("─", sideWidth)
@@ -198,10 +216,11 @@ func SectionDivider(title string) string {
 		Render(left + " " + title + " " + right)
 }
 
-// Divider returns a horizontal divider line with adaptive width
+// Divider returns a horizontal divider line with responsive width
+// Pass width <= 0 to auto-detect from terminal width
 func Divider(width int) string {
 	if width <= 0 {
-		width = 65 // Default fallback
+		width = DividerWidth()
 	}
 
 	dividerLine := strings.Repeat(DividerChar, width)
