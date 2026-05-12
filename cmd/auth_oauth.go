@@ -140,7 +140,7 @@ func performOAuthLogin(clientID, clientSecret string) error {
 
 	// Step 5: Store tokens
 	fmt.Printf("%s Storing credentials...\n", display.Badge("4", display.Primary))
-	if err := StoreOAuthToken(tokenResp); err != nil {
+	if err := tokenManager.StoreOAuthToken(tokenResp); err != nil {
 		return fmt.Errorf("failed to store OAuth token: %v", err)
 	}
 

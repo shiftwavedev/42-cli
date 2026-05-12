@@ -24,18 +24,3 @@ func (v *Validator) Validate(creds *Credentials) bool {
 		v.clientIDPattern.MatchString(creds.ClientID) &&
 		v.clientSecretPattern.MatchString(creds.ClientSecret)
 }
-
-// ValidateLogin42 checks if login42 is in the correct format
-func (v *Validator) ValidateLogin42(login string) bool {
-	return v.login42Pattern.MatchString(login)
-}
-
-// ValidateClientID checks if client ID is in the correct format
-func (v *Validator) ValidateClientID(clientID string) bool {
-	return v.clientIDPattern.MatchString(clientID)
-}
-
-// ValidateClientSecret checks if client secret is in the correct format
-func (v *Validator) ValidateClientSecret(secret string) bool {
-	return v.clientSecretPattern.MatchString(secret)
-}

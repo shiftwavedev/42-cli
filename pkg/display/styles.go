@@ -251,11 +251,6 @@ func Header(title string, subtitle string) string {
 	return result
 }
 
-// SectionHeader renders a secondary section header (deprecated: use SectionDivider instead)
-func SectionHeader(title string) string {
-	return RenderIf(H2, title)
-}
-
 // ListItem renders a bulleted list item
 func ListItem(text string) string {
 	return Indent + ListPrefix() + " " + text

@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/shiftwavedev/42-cli/internal/api"
+	"github.com/shiftwavedev/42-cli/pkg/auth"
 	"github.com/shiftwavedev/42-cli/pkg/display"
 )
 
@@ -40,7 +41,7 @@ var correctionsCmd = &cobra.Command{
 }
 
 func getCorrectionsAsCorrector() ([]ScaleTeam, error) {
-	token, err := GetAccessToken()
+	token, err := tokenManager.GetValidToken(auth.ScopeUser)
 	if err != nil {
 		return nil, err
 	}
@@ -55,7 +56,7 @@ func getCorrectionsAsCorrector() ([]ScaleTeam, error) {
 }
 
 func getCorrectionsAsCorrected() ([]ScaleTeam, error) {
-	token, err := GetAccessToken()
+	token, err := tokenManager.GetValidToken(auth.ScopeUser)
 	if err != nil {
 		return nil, err
 	}

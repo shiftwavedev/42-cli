@@ -12,6 +12,7 @@ import (
 
 	"github.com/shiftwavedev/42-cli/internal/api"
 	"github.com/shiftwavedev/42-cli/internal/helpers"
+	"github.com/shiftwavedev/42-cli/pkg/auth"
 	"github.com/shiftwavedev/42-cli/pkg/display"
 )
 
@@ -80,7 +81,7 @@ var cloneCmd = &cobra.Command{
 }
 
 func getUserProjects(login string) ([]ProjectUser, error) {
-	token, err := GetAccessToken()
+	token, err := tokenManager.GetValidToken(auth.ScopeUser)
 	if err != nil {
 		return nil, err
 	}
@@ -199,7 +200,7 @@ func getProjectRepoURL(login, projectName string) (string, error) {
 }
 
 func getProjectTeams(projectUserID int) ([]Team, error) {
-	token, err := GetAccessToken()
+	token, err := tokenManager.GetValidToken(auth.ScopeUser)
 	if err != nil {
 		return nil, err
 	}

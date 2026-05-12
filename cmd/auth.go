@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/zalando/go-keyring"
 
+	"github.com/shiftwavedev/42-cli/pkg/auth"
 	"github.com/shiftwavedev/42-cli/pkg/credentials"
 	"github.com/shiftwavedev/42-cli/pkg/display"
 )
@@ -102,7 +103,7 @@ var tokenCmd = &cobra.Command{
 
 		// Gather app token info
 		var appTokenInfo *display.TokenInfo
-		appToken, err := GetApplicationToken()
+		appToken, err := tokenManager.GetValidToken(auth.ScopeApplication)
 		if err == nil {
 			expiryStr, _ := keyring.Get(service, "token_expiry")
 			expiry, _ := strconv.ParseInt(expiryStr, 10, 64)
@@ -114,7 +115,7 @@ var tokenCmd = &cobra.Command{
 
 		// Gather user token info
 		var userTokenInfo *display.TokenInfo
-		userToken, err := GetUserToken()
+		userToken, err := tokenManager.GetValidToken(auth.ScopeUser)
 		if err == nil {
 			expiryStr, _ := keyring.Get(service, "user_token_expiry")
 			expiry, _ := strconv.ParseInt(expiryStr, 10, 64)
