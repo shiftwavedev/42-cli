@@ -100,12 +100,13 @@ func RenderUserProfile(user *UserProfile) string {
 	// Campus list
 	if len(user.Campus) > 0 {
 		b.WriteString("\n")
-		b.WriteString(SectionDivider("Campus"))
-		b.WriteString("\n")
+		campusList := ""
 		for _, campus := range user.Campus {
-			b.WriteString(ListItem(fmt.Sprintf("%s, %s", campus.Name, campus.Country)))
-			b.WriteString("\n")
+			campusList += ListItem(fmt.Sprintf("%s, %s", campus.Name, campus.Country)) + "\n"
 		}
+		b.WriteString(DividerForContent("CAMPUS", campusList))
+		b.WriteString("\n\n")
+		b.WriteString(campusList)
 	}
 
 	// Cursus list with progress bars
@@ -113,32 +114,12 @@ func RenderUserProfile(user *UserProfile) string {
 		if len(user.Campus) == 0 {
 			b.WriteString("\n")
 		}
-		b.WriteString(SectionDivider("Cursus"))
-		b.WriteString("\n")
-		for _, cursus := range user.CursusUsers {
-			// Cursus name and level indicator (with grade if present)
-			name := PadRight(cursus.Cursus.Name, AutoPadWidth())
-			levelStr := FormatLevel(cursus.Level)
-			if cursus.Grade != "" {
-				levelStr += RenderIf(Subtle, fmt.Sprintf(" (%s)", cursus.Grade))
-			}
-			b.WriteString(name + "  " + levelStr + "\n")
-
-			// Progress bar (visual in COLOR, plus numeric in both modes)
-			bar := renderProgressBar(cursus.Level, 30)
-			if NoColor {
-				// NO_COLOR: show progress bar (text already included) + percentage for clarity
-				percentage := (cursus.Level / 21.0) * 100.0
-				b.WriteString(fmt.Sprintf("%s%s  (%.1f%%)\n", Indent, bar, percentage))
-			} else {
-				// COLOR mode: just the visual progress bar
-				b.WriteString(Indent + bar + "\n")
-			}
-			b.WriteString("\n")
-		}
+		cursusList := renderCursusList(user.CursusUsers)
+		b.WriteString(DividerForContent("CURSUS", cursusList))
+		b.WriteString("\n\n")
+		b.WriteString(cursusList)
 	}
 
-	// Footer - relative timestamps
 	created := RelativeTime(user.CreatedAt)
 	updated := RelativeTime(user.UpdatedAt)
 	footer := fmt.Sprintf("Created %s · Updated %s", created, updated)
@@ -214,8 +195,7 @@ func RenderLocationInfo(login string, locations []LocationInfo) string {
 	}
 
 	if len(active) > 0 {
-		b.WriteString(SectionDivider("Current Session"))
-		b.WriteString("\n")
+		sessionContent := ""
 		for _, loc := range active {
 			// Parse begin time for duration calculation
 			beginTime, _ := time.Parse(time.RFC3339, loc.BeginAt)
@@ -231,12 +211,40 @@ func RenderLocationInfo(login string, locations []LocationInfo) string {
 				RenderIf(Subtle, "Duration"),
 				duration,
 			)
-			b.WriteString(Panel("Session", locationBody))
+			sessionContent += Panel("Session", locationBody) + "\n"
 		}
+		b.WriteString(DividerForContent("CURRENT SESSION", sessionContent))
+		b.WriteString("\n\n")
+		b.WriteString(sessionContent)
 	} else {
 		// Offline status
 		b.WriteString(Icon("offline") + " Offline\n")
 	}
 
 	return b.String()
+}
+
+// renderCursusList renders the cursus list as a single string for divider width calculation
+func renderCursusList(cursusUsers []CursusUser) string {
+	var result strings.Builder
+
+	for _, cursus := range cursusUsers {
+		name := PadRight(cursus.Cursus.Name, AutoPadWidth())
+		levelStr := FormatLevel(cursus.Level)
+		if cursus.Grade != "" {
+			levelStr += RenderIf(Subtle, fmt.Sprintf(" (%s)", cursus.Grade))
+		}
+		result.WriteString(name + "  " + levelStr + "\n")
+
+		bar := renderProgressBar(cursus.Level, 30)
+		if NoColor {
+			percentage := (cursus.Level / 21.0) * 100.0
+			result.WriteString(fmt.Sprintf("%s%s  (%.1f%%)\n", Indent, bar, percentage))
+		} else {
+			result.WriteString(Indent + bar + "\n")
+		}
+		result.WriteString("\n")
+	}
+
+	return result.String()
 }

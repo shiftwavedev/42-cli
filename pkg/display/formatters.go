@@ -257,3 +257,27 @@ func WrapTextResponsive(text string, reservedWidth int) string {
 	}
 	return text
 }
+
+// DividerForContent creates a section divider that matches the width of rendered content
+func DividerForContent(title string, renderedContent string) string {
+	contentWidth := lipgloss.Width(renderedContent)
+	if contentWidth <= 0 {
+		return SectionDivider(title)
+	}
+	return SectionDividerWithWidth(title, contentWidth)
+}
+
+// SectionDividerWithWidth creates a section divider with explicit width
+func SectionDividerWithWidth(title string, width int) string {
+	if width <= 0 {
+		return SectionDivider(title)
+	}
+	sideWidth := max((width-len(title)-2)/2, 1)
+
+	left := strings.Repeat(DividerChar, sideWidth)
+	right := strings.Repeat(DividerChar, width-len(title)-2-sideWidth)
+
+	return lipgloss.NewStyle().
+		Foreground(Border).
+		Render(left + " " + title + " " + right)
+}

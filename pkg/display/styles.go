@@ -184,7 +184,7 @@ func Panel(title, body string) string {
 
 	return lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
-		BorderForeground(Muted).
+		BorderForeground(Border).
 		Padding(1, 2).
 		Render(titleStyle.Render(title) + "\n" + body)
 }
@@ -198,13 +198,13 @@ func DividerWidth() int {
 	return 20
 }
 
-// SectionDividerWidth returns width for section headers (slightly narrower)
+// SectionDividerWidth returns width for section headers (more constrained)
 func SectionDividerWidth() int {
 	width := DividerWidth()
-	if width > 8 {
-		return width - 4
+	if width > 50 {
+		return width - 8
 	}
-	return width
+	return width - 4
 }
 
 // SectionDivider renders a section header line with title
@@ -216,7 +216,7 @@ func SectionDivider(title string) string {
 	right := strings.Repeat("─", width-len(title)-2-sideWidth)
 
 	return lipgloss.NewStyle().
-		Foreground(Muted).
+		Foreground(Border).
 		Render(left + " " + title + " " + right)
 }
 
@@ -230,7 +230,7 @@ func Divider(width int) string {
 	dividerLine := strings.Repeat(DividerChar, width)
 
 	return lipgloss.NewStyle().
-		Foreground(Muted).
+		Foreground(Border).
 		Render(dividerLine)
 }
 

@@ -83,7 +83,7 @@ func renderCorrectionCard(card CorrectionCard) string {
 	bodyStr := strings.Join(lines, "\n")
 	cardStyle := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
-		BorderForeground(Muted).
+		BorderForeground(Border).
 		Padding(0, 2)
 
 	return Indent + strings.ReplaceAll(cardStyle.Render(bodyStr), "\n", "\n"+Indent)

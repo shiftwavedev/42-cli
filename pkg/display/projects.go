@@ -64,9 +64,10 @@ func RenderProjectsList(login string, projects []ProjectInfo) string {
 
 	// Finished projects
 	if len(finished) > 0 {
-		b.WriteString(SectionDivider(fmt.Sprintf("FINISHED (%d)", len(finished))))
+		finishedTable := renderProjectsTable(finished, "finished")
+		b.WriteString(DividerForContent(fmt.Sprintf("FINISHED (%d)", len(finished)), finishedTable))
 		b.WriteString("\n\n")
-		b.WriteString(renderProjectsTable(finished, "finished"))
+		b.WriteString(finishedTable)
 		b.WriteString("\n")
 	}
 
@@ -75,9 +76,10 @@ func RenderProjectsList(login string, projects []ProjectInfo) string {
 		if len(finished) > 0 {
 			b.WriteString("\n")
 		}
-		b.WriteString(SectionDivider(fmt.Sprintf("IN PROGRESS (%d)", len(inProgress))))
+		inProgressTable := renderProjectsTable(inProgress, "in_progress")
+		b.WriteString(DividerForContent(fmt.Sprintf("IN PROGRESS (%d)", len(inProgress)), inProgressTable))
 		b.WriteString("\n\n")
-		b.WriteString(renderProjectsTable(inProgress, "in_progress"))
+		b.WriteString(inProgressTable)
 		b.WriteString("\n")
 	}
 
@@ -86,22 +88,23 @@ func RenderProjectsList(login string, projects []ProjectInfo) string {
 		if len(finished) > 0 || len(inProgress) > 0 {
 			b.WriteString("\n")
 		}
-		b.WriteString(SectionDivider(fmt.Sprintf("FAILED (%d)", len(failed))))
+		failedTable := renderProjectsTable(failed, "failed")
+		b.WriteString(DividerForContent(fmt.Sprintf("FAILED (%d)", len(failed)), failedTable))
 		b.WriteString("\n\n")
-		b.WriteString(renderProjectsTable(failed, "failed"))
+		b.WriteString(failedTable)
 		b.WriteString("\n")
 	}
 
 	// Summary
 	summary := calculateSummary(finished, inProgress, failed)
 	b.WriteString("\n")
-	b.WriteString(SectionDivider("SUMMARY"))
-	b.WriteString("\n\n")
 	summaryLine := fmt.Sprintf("%s %d finished · %s %d in progress · %s %d failed",
 		Badge("✓", Success), summary.Finished,
 		Badge("◦", Warning), summary.InProgress,
 		Badge("✗", Error), summary.Failed,
 	)
+	b.WriteString(DividerForContent("SUMMARY", Indent+summaryLine))
+	b.WriteString("\n\n")
 	b.WriteString(Indent + summaryLine + "\n")
 
 	return b.String()
@@ -111,7 +114,7 @@ func RenderProjectsList(login string, projects []ProjectInfo) string {
 func renderProjectsTable(projects []ProjectInfo, category string) string {
 	t := table.New().
 		Border(lipgloss.RoundedBorder()).
-		BorderStyle(lipgloss.NewStyle().Foreground(Muted)).
+		BorderStyle(lipgloss.NewStyle().Foreground(Border)).
 		StyleFunc(func(row, col int) lipgloss.Style {
 			// Header row styling
 			if row == 0 {
