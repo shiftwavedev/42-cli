@@ -17,16 +17,20 @@ func init() {
 	}
 }
 
-// Color palette - adaptive for light and dark terminal backgrounds
-// TODO: Change that's not really adaptive :/ I don't found the best colors for light/dark terminals
+// Color palette - Modern Slate + Blue + Purple
+// Aligned with web design system, WCAG AA compliant
 var (
-	Primary   = lipgloss.AdaptiveColor{Light: "27", Dark: "39"}   // Bright blue on light, soft blue on dark
-	Secondary = lipgloss.AdaptiveColor{Light: "243", Dark: "246"} // Dark gray on light, light gray on dark
-	Success   = lipgloss.AdaptiveColor{Light: "28", Dark: "2"}    // Dark green on light, bright green on dark
-	Warning   = lipgloss.AdaptiveColor{Light: "130", Dark: "3"}   // Brown/orange on light, bright yellow on dark
-	Error     = lipgloss.AdaptiveColor{Light: "160", Dark: "1"}   // Dark red on light, bright red on dark
-	Muted     = lipgloss.AdaptiveColor{Light: "245", Dark: "240"} // Mid-gray for both
-	Text      = lipgloss.AdaptiveColor{Light: "235", Dark: "252"} // Near-black on light, near-white on dark
+	// === Adaptive Colors (auto light/dark detection) ===
+	Primary   = lipgloss.AdaptiveColor{Light: "#0f172a", Dark: "#f8fafc"}
+	Secondary = lipgloss.AdaptiveColor{Light: "#4a5568", Dark: "#a8b3cf"}
+	Success   = lipgloss.AdaptiveColor{Light: "#10b981", Dark: "#10b981"}
+	Warning   = lipgloss.AdaptiveColor{Light: "#f59e0b", Dark: "#f59e0b"}
+	Error     = lipgloss.AdaptiveColor{Light: "#ef4444", Dark: "#ef4444"}
+	Muted     = lipgloss.AdaptiveColor{Light: "#4a5568", Dark: "#a8b3cf"}
+	Text      = lipgloss.AdaptiveColor{Light: "#0f172a", Dark: "#f8fafc"}
+	Accent    = lipgloss.AdaptiveColor{Light: "#8b5cf6", Dark: "#8b5cf6"}
+	Border    = lipgloss.AdaptiveColor{Light: "#1e293b", Dark: "#60a5fa"}
+	Link      = lipgloss.AdaptiveColor{Light: "#2563eb", Dark: "#60a5fa"}
 )
 
 // Typography styles - clean, readable
