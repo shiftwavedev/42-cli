@@ -65,10 +65,8 @@ type spinnerDoneMsg struct{}
 // Spinner provides a unified API for showing loading spinners
 // Works in both COLOR and NO_COLOR modes, renders to stderr to not pollute stdout
 type Spinner struct {
-	program   *tea.Program
-	done      chan struct{}
-	frames    []string // Braille frames for spinner animation
-	lastFrame int
+	program *tea.Program
+	done    chan struct{}
 }
 
 // NewSpinner creates a new unified spinner that works in all modes
@@ -80,7 +78,6 @@ func NewSpinner(message string) *Spinner {
 	s := &Spinner{
 		program: p,
 		done:    make(chan struct{}),
-		frames:  []string{"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"},
 	}
 
 	go func() {
