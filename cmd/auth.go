@@ -11,6 +11,7 @@ import (
 	"github.com/shiftwavedev/42-cli/pkg/auth"
 	"github.com/shiftwavedev/42-cli/pkg/credentials"
 	"github.com/shiftwavedev/42-cli/pkg/display"
+	"github.com/shiftwavedev/42-cli/pkg/tui"
 )
 
 const service string = "42-cli"
@@ -29,14 +30,14 @@ var authCmd = &cobra.Command{
 }
 
 var loginCmd = &cobra.Command{
-	Use:   "login [login42] [client_id] [secret_id]",
+	Use:   "login",
 	Short: "Store authentication credentials and authenticate with 42 API using OAuth",
-	Args:  cobra.ExactArgs(3),
+	Long:  "Store authentication credentials using an interactive TUI form.",
+	Args:  cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
-		creds := &credentials.Credentials{
-			Login42:      args[0],
-			ClientID:     args[1],
-			ClientSecret: args[2],
+		creds, err := tui.RunAuthForm("login")
+		if err != nil {
+			log.Fatalf("Form error: %v", err)
 		}
 
 		if err := credManager.Store(creds); err != nil {
@@ -45,7 +46,7 @@ var loginCmd = &cobra.Command{
 		fmt.Println("Credentials stored successfully")
 		fmt.Println("Starting OAuth authentication...")
 
-		err := performOAuthLogin(creds.ClientID, creds.ClientSecret)
+		err = performOAuthLogin(creds.ClientID, creds.ClientSecret)
 		if err != nil {
 			log.Fatalf("OAuth authentication failed: %v", err)
 		}
@@ -66,14 +67,14 @@ var logoutCmd = &cobra.Command{
 }
 
 var updateCmd = &cobra.Command{
-	Use:   "update [login42] [client_id] [secret_id]",
+	Use:   "update",
 	Short: "Update stored authentication credentials",
-	Args:  cobra.ExactArgs(3),
+	Long:  "Update authentication credentials using an interactive TUI form.",
+	Args:  cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
-		creds := &credentials.Credentials{
-			Login42:      args[0],
-			ClientID:     args[1],
-			ClientSecret: args[2],
+		creds, err := tui.RunAuthForm("update")
+		if err != nil {
+			log.Fatalf("Form error: %v", err)
 		}
 
 		if err := credManager.Store(creds); err != nil {
