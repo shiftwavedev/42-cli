@@ -21,64 +21,54 @@ func init() {
 // Aligned with web design system, WCAG AA compliant
 var (
 	// === Adaptive Colors (auto light/dark detection) ===
-	Primary   = lipgloss.AdaptiveColor{Light: "#0f172a", Dark: "#f8fafc"}
-	Secondary = lipgloss.AdaptiveColor{Light: "#4a5568", Dark: "#a8b3cf"}
-	Success   = lipgloss.AdaptiveColor{Light: "#10b981", Dark: "#10b981"}
-	Warning   = lipgloss.AdaptiveColor{Light: "#f59e0b", Dark: "#f59e0b"}
-	Error     = lipgloss.AdaptiveColor{Light: "#ef4444", Dark: "#ef4444"}
-	Muted     = lipgloss.AdaptiveColor{Light: "#4a5568", Dark: "#a8b3cf"}
-	Text      = lipgloss.AdaptiveColor{Light: "#0f172a", Dark: "#f8fafc"}
-	Accent    = lipgloss.AdaptiveColor{Light: "#8b5cf6", Dark: "#8b5cf6"}
-	Border    = lipgloss.AdaptiveColor{Light: "#1e293b", Dark: "#60a5fa"}
-	Link      = lipgloss.AdaptiveColor{Light: "#2563eb", Dark: "#60a5fa"}
+	Primary    = lipgloss.AdaptiveColor{Light: "#0f172a", Dark: "#f8fafc"}
+	Secondary  = lipgloss.AdaptiveColor{Light: "#4a5568", Dark: "#a8b3cf"}
+	Success    = lipgloss.AdaptiveColor{Light: "#10b981", Dark: "#10b981"}
+	Warning    = lipgloss.AdaptiveColor{Light: "#f59e0b", Dark: "#f59e0b"}
+	Error      = lipgloss.AdaptiveColor{Light: "#ef4444", Dark: "#ef4444"}
+	Muted      = lipgloss.AdaptiveColor{Light: "#4a5568", Dark: "#a8b3cf"}
+	Text       = lipgloss.AdaptiveColor{Light: "#0f172a", Dark: "#f8fafc"}
+	ListPoints = lipgloss.AdaptiveColor{Light: "#f8fafc", Dark: "#0f172a"}
+	Accent     = lipgloss.AdaptiveColor{Light: "#8b5cf6", Dark: "#8b5cf6"}
+	Border     = lipgloss.AdaptiveColor{Light: "#1e293b", Dark: "#60a5fa"}
+	Link       = lipgloss.AdaptiveColor{Light: "#2563eb", Dark: "#60a5fa"}
 )
 
-// Typography styles - clean, readable
 var (
-	// H1 - Main headers
 	H1 = lipgloss.NewStyle().
 		Bold(true).
 		Foreground(Text)
 
-	// H2 - Section headers
 	H2 = lipgloss.NewStyle().
 		Bold(true).
 		Foreground(Primary).
 		MarginTop(1)
 
-	// Body - Regular text
 	Body = lipgloss.NewStyle().
 		Foreground(Text)
 
-	// Subtle - Dimmed text for metadata
 	Subtle = lipgloss.NewStyle().
 		Foreground(Muted).
 		Italic(true)
 
-	// Code - Monospace styled text
 	Code = lipgloss.NewStyle().
 		Foreground(Secondary)
 
-	// ErrorText - Error messages
 	ErrorText = lipgloss.NewStyle().
 			Foreground(Error).
 			Bold(true)
 
-	// SuccessText - Success messages
 	SuccessText = lipgloss.NewStyle().
 			Foreground(Success)
 
-	// WarningText - Warning messages
 	WarningText = lipgloss.NewStyle().
 			Foreground(Warning)
 )
 
 // Layout elements
 var (
-	// Divider character for separating sections
 	DividerChar = "─"
 
-	// Indent for nested content
 	Indent = "  "
 )
 
@@ -119,9 +109,10 @@ func ListPrefix() string {
 // Badge renders a colored badge/pill with text
 // TerminalColor interface accepts both Color and AdaptiveColor
 func Badge(text string, color lipgloss.TerminalColor) string {
+	// Use inverted text color for good contrast: white text on dark background, dark text on light
 	return lipgloss.NewStyle().
 		Background(color).
-		Foreground(Text).
+		Foreground(ListPoints).
 		Bold(true).
 		Padding(0, 1).
 		Render(text)
