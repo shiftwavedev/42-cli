@@ -2,6 +2,8 @@ package display
 
 import (
 	"fmt"
+	"time"
+	"sort"
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
@@ -63,6 +65,10 @@ func RenderProjectsList(login string, projects []ProjectInfo) string {
 		}
 
 	}
+
+	sortProjectsByMarkedAt(finished)
+	sortProjectsByMarkedAt(inProgress)
+	sortProjectsByMarkedAt(failed)
 
 	// Finished projects
 	if len(finished) > 0 {
@@ -128,7 +134,7 @@ func renderProjectsTable(projects []ProjectInfo, category string) string {
 			// Regular rows
 			return lipgloss.NewStyle().Padding(0, 1)
 		}).
-		Headers("PROJECT", "STATUS", "SCORE", "NOTES").
+		Headers("PROJECT", "STATUS", "SCORE", "DATE").
 		Rows()
 
 	for _, p := range projects {
@@ -186,29 +192,10 @@ func buildProjectRow(p ProjectInfo, category string) []string {
 		}
 	}
 
-	// Column 4: Notes (metadata)
-	var notes string
-	switch category {
-	case "finished":
-		if p.MarkedAt != "" {
-			notes = RenderIf(Subtle, RelativeTime(p.MarkedAt))
-		} else {
-			notes = "—"
-		}
-
-	case "in_progress":
-		if p.TeamCount > 1 {
-			notes = fmt.Sprintf("%d members", p.TeamCount)
-		} else {
-			notes = "—"
-		}
-
-	case "failed":
-		if p.Retriable {
-			notes = Badge("retriable", Warning)
-		} else {
-			notes = "—"
-		}
+	// Column 4: Date (marked_at)
+	notes := "—"
+	if p.MarkedAt != "" {
+		notes = RenderIf(Subtle, formatMarkedAt(p.MarkedAt))
 	}
 
 	return []string{name, statusBadge, score, notes}
@@ -220,4 +207,45 @@ func calculateSummary(finished, inProgress, failed []ProjectInfo) ProjectSummary
 		InProgress: len(inProgress),
 		Failed:     len(failed),
 	}
+}
+
+func sortProjectsByMarkedAt(projects []ProjectInfo) {
+	sort.SliceStable(projects, func(i, j int) bool {
+		first := parseMarkedAt(projects[i].MarkedAt)
+		second := parseMarkedAt(projects[j].MarkedAt)
+
+		if first.IsZero() && second.IsZero() {
+			return false
+		}
+		if first.IsZero() {
+			return false
+		}
+		if second.IsZero() {
+			return true
+		}
+
+		return first.After(second)
+	})
+}
+
+func parseMarkedAt(value string) time.Time {
+	if value == "" {
+		return time.Time{}
+	}
+
+	parsed, err := time.Parse(time.RFC3339Nano, value)
+	if err != nil {
+		return time.Time{}
+	}
+
+	return parsed
+}
+
+func formatMarkedAt(value string) string {
+	parsed := parseMarkedAt(value)
+	if parsed.IsZero() {
+		return value
+	}
+
+	return RelativeTimeFromTime(parsed)
 }
