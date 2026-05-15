@@ -87,7 +87,7 @@ func getUserProjects(login string) ([]ProjectUser, error) {
 	}
 
 	var projects []ProjectUser
-	err = api.DefaultClient.Get(fmt.Sprintf("/v2/users/%s/projects_users", login), token, &projects)
+	err = api.DefaultClient.Get(fmt.Sprintf("/v2/users/%s/projects_users?page[size]=100", login), token, &projects)
 	if err != nil {
 		return nil, err
 	}
