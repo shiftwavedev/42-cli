@@ -16,6 +16,7 @@ type ProjectInfo struct {
 	Validated bool
 	FinalMark int
 	MarkedAt  string
+	CursusIds int
 	Retriable bool
 	TeamCount int
 }
@@ -44,22 +45,23 @@ func RenderProjectsList(login string, projects []ProjectInfo) string {
 		return b.String()
 	}
 
-	// Categorize projects (matching original logic from cmd/projects.go)
 	var finished, inProgress, failed []ProjectInfo
 	for _, p := range projects {
-		status := strings.ToLower(p.Status)
-		// Finished: status == "finished" AND validated
-		if status == "finished" && p.Validated {
-			finished = append(finished, p)
+		// NOTE: hardcoded to cursus_id 21 (common core)
+		if p.CursusIds == 21 {
+			if (p.FinalMark >= 80 && p.Validated == true) || (p.FinalMark >= 80 && p.Validated == true && p.Status == "finished") {
+				finished = append(finished, p)
+			}
+
+			if p.FinalMark < 80 && !p.Validated && p.Status == "finished" {
+				failed = append(failed, p)
+			}
+
+			if p.FinalMark == 0 && !p.Validated && (p.Status == "in_progress" || p.Status == "waiting_for_correction") {
+				inProgress = append(inProgress, p)
+			}
 		}
-		// In Progress: (status == "waiting_for_correction" OR status == "in_progress") AND NOT validated
-		if (status == "waiting_for_correction" || status == "in_progress") && !p.Validated {
-			inProgress = append(inProgress, p)
-		}
-		// Failed: status == "failed" only
-		if status == "failed" {
-			failed = append(failed, p)
-		}
+
 	}
 
 	// Finished projects

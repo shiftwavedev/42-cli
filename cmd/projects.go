@@ -110,6 +110,8 @@ func displayUserProjects(login string, projects []ProjectUser) {
 			Validated: p.Validated,
 			FinalMark: p.FinalMark,
 			MarkedAt:  p.MarkedAt,
+			// Convert cursus_ids to a single value (doc see only one value, so use last one ??)
+			CursusIds: p.CursusIds[len(p.CursusIds)-1],
 			Retriable: p.Retriable,
 			TeamCount: teamCount,
 		})
