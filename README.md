@@ -1,8 +1,11 @@
 # 42-cli
 
+> [!IMPORTANT]
+> **This project has been discontinued. There are several reasons for this decision. The documentation of 42 school intranet is outdated, and I don't have the time to continue the testing required to update it. Finally, it appears that 42 school is in the process of transitioning to a new intranet.**
+
+
 [![CI](https://github.com/shiftwavedev/42-cli/actions/workflows/ci.yml/badge.svg)](https://github.com/shiftwavedev/42-cli/actions/workflows/ci.yml)
 [![Release](https://github.com/shiftwavedev/42-cli/actions/workflows/release.yml/badge.svg)](https://github.com/shiftwavedev/42-cli/actions/workflows/release.yml)
-[![Go Report Card](https://goreportcard.com/badge/github.com/shiftwavedev/42-cli)](https://goreportcard.com/report/github.com/shiftwavedev/42-cli)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
 42-cli brings [42 School](https://42.fr) intranet to your terminal, providing a command-line interface to access public intranet data.
